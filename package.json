@@ -3,14 +3,49 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check:config": "tsx -e \"import('./config/sector.config.ts').then(m => console.log('OK —', m.sectorConfig.company.name, '·', m.sectorConfig.sites.length, 'sites ·', m.sectorConfig.workOrder.stages.length, 'étapes'))\"",
-    "typecheck": "tsc --noEmit"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "db:start": "supabase start && node scripts/write-env.mjs",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset && pnpm db:seed",
+    "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
+    "check:config": "tsx -e \"import('./config/sector.config.ts').then(m => console.log('OK —', m.sectorConfig.company.name, '·', m.sectorConfig.sites.length, 'sites ·', m.sectorConfig.workOrder.stages.length, 'étapes'))\""
   },
   "dependencies": {
-    "zod": "^3.25.76"
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
+    "@tanstack/react-query": "^5.104.5",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "next": "^15.5.28",
+    "next-intl": "^4.14.9",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "server-only": "^0.0.1",
+    "zod": "^3.25.76",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.28",
+    "postcss": "^8.5.31",
+    "prettier": "^3.9.10",
+    "supabase": "^2.121.0",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
   }
 }

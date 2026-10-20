@@ -127,6 +127,23 @@ export const SectorConfigSchema = z.object({
     physicalObject: z.string().min(1),
     stages: z.array(StageSchema).min(5).max(7),
   }),
+  crm: z.object({
+    pipelineStages: z
+      .array(
+        z.object({
+          id,
+          label: z.string().min(1),
+          probability: z.number().min(0).max(1),
+          color: hexColor,
+          outcome: z.enum(["open", "won", "lost"]).default("open"),
+        }),
+      )
+      .min(3),
+    quotePrefix: z.string().min(1),
+    invoicePrefix: z.string().min(1),
+    quoteValidityDays: z.number().int().positive(),
+    paymentTermsDays: z.number().int().positive(),
+  }),
   technologies: z.array(TechnologySchema).min(1),
   productFamilies: z.array(ProductFamilySchema).min(1),
   clickables: z.array(ClickableKindSchema).min(1),

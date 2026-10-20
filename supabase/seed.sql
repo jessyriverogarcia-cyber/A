@@ -1,0 +1,1 @@
+-- Les données de démo sont générées depuis config/sector.config.ts : voir scripts/seed.ts (pnpm db:seed).

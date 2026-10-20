@@ -83,6 +83,21 @@ const input: SectorConfigInput = {
     ],
   },
 
+  crm: {
+    pipelineStages: [
+      { id: "lead", label: "Prospect", probability: 0.1, color: "#64748B" },
+      { id: "qualified", label: "Qualification", probability: 0.25, color: "#6366F1" },
+      { id: "proposal", label: "Proposition", probability: 0.5, color: "#0EA5E9" },
+      { id: "negotiation", label: "Négociation", probability: 0.75, color: "#F59E0B" },
+      { id: "won", label: "Gagné", probability: 1, color: "#10B981", outcome: "won" },
+      { id: "lost", label: "Perdu", probability: 0, color: "#EF4444", outcome: "lost" },
+    ],
+    quotePrefix: "DEV",
+    invoicePrefix: "FAC",
+    quoteValidityDays: 30,
+    paymentTermsDays: 30, // délai légal par défaut en France (LME : 60 j max)
+  },
+
   technologies: [
     { id: "fdm", label: "FDM (filament)", kit: "printer_fdm", zoneId: "print_floor", animation: "tête qui va et vient, pièce qui monte couche par couche" },
     { id: "sla", label: "SLA / DLP (résine)", kit: "printer_sla", zoneId: "print_floor", animation: "plateau qui remonte de la cuve, lueur UV" },

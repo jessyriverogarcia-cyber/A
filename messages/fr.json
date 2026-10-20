@@ -1,0 +1,69 @@
+{
+  "common": {
+    "signOut": "Se déconnecter",
+    "simulated": "Mode simulé",
+    "simulatedHint": "Aucune intégration n'est connectée : les e-mails, agendas et fichiers sont simulés.",
+    "comingInPhase": "Prévu en phase {phase}",
+    "readOnly": "Lecture seule"
+  },
+  "login": {
+    "title": "Connexion",
+    "subtitle": "Accédez à la Map vivante et au back-office.",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "magicLink": "Recevoir un lien de connexion",
+    "magicLinkSent": "Lien envoyé. Ouvrez votre boîte de réception.",
+    "magicLinkLocal": "En local, les e-mails arrivent dans Mailpit : http://127.0.0.1:54324",
+    "or": "ou",
+    "sso": "Continuer avec {provider}",
+    "ssoNotConfigured": "Non configuré",
+    "demoAccounts": "Comptes de démonstration",
+    "demoHint": "Un clic pour se connecter avec un rôle. Données entièrement fictives.",
+    "error": "Identifiants incorrects.",
+    "mfaTitle": "Vérification en deux étapes",
+    "mfaCode": "Code à 6 chiffres de votre application",
+    "mfaSubmit": "Vérifier"
+  },
+  "nav": {
+    "map": "Map vivante",
+    "dashboard": "Tableau de bord",
+    "crm": "Commercial",
+    "ops": "Production",
+    "finance": "Finance",
+    "resources": "Ressources & stock",
+    "hr": "RH",
+    "comms": "Communication",
+    "ai": "Assistant IA",
+    "pilotage": "Pilotage",
+    "settings": "Paramètres",
+    "tech": "Page technique",
+    "security": "Sécurité du compte"
+  },
+  "tech": {
+    "title": "Page technique",
+    "subtitle": "Vérification du socle : session, rôle, droits, données de démo et temps réel.",
+    "session": "Session",
+    "role": "Rôle",
+    "permissions": "Droits du rôle",
+    "tables": "Tables visibles avec vos droits",
+    "rows": "{count, plural, =0 {aucune ligne} one {# ligne} other {# lignes}}",
+    "denied": "masqué par la RLS",
+    "samples": "Échantillons",
+    "realtime": "Flux d'activité en temps réel",
+    "realtimeHint": "Abonnement Supabase Realtime à activity_events.",
+    "emit": "Émettre un événement de test",
+    "connected": "Connecté",
+    "connecting": "Connexion…",
+    "waiting": "En attente d'événements…"
+  },
+  "security": {
+    "title": "Sécurité du compte",
+    "totp": "Double authentification (TOTP)",
+    "totpHint": "Scannez le QR code avec Google Authenticator, 1Password, Authy…",
+    "enroll": "Activer la double authentification",
+    "verify": "Confirmer",
+    "enabled": "Double authentification active",
+    "disable": "Désactiver"
+  }
+}
