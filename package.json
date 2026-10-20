@@ -1,0 +1,16 @@
+{
+  "name": "strato-fab-map",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:config": "tsx -e \"import('./config/sector.config.ts').then(m => console.log('OK —', m.sectorConfig.company.name, '·', m.sectorConfig.sites.length, 'sites ·', m.sectorConfig.workOrder.stages.length, 'étapes'))\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
