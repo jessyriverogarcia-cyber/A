@@ -36,9 +36,27 @@ Voir `.env.example`. En production :
 | `INTEGRATIONS_SECRET` | 32 caractères minimum (`openssl rand -base64 48`) — chiffre les jetons OAuth |
 | `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `MS_TENANT_ID` | Microsoft 365 (facultatif) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Workspace (facultatif) |
+| `NEXT_PUBLIC_SSO_PROVIDERS` | `azure`, `google` ou les deux (section 6) ; vide : boutons SSO inactifs |
+| `CRON_SECRET` | 16 caractères minimum — protège la relève planifiée des e-mails entrants (section 7) |
 
-Ne jamais exposer `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `INTEGRATIONS_SECRET` ni les
+Ne pas définir `DEMO_PASSWORD` en production.
+
+Ne jamais exposer `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `INTEGRATIONS_SECRET`, `CRON_SECRET` ni les
 secrets OAuth au navigateur (aucune n'a le préfixe `NEXT_PUBLIC_`).
+
+### Vérification automatique
+
+Copier les variables de production dans `.env.production.local` (ignoré par git), puis :
+
+```bash
+pnpm check:prod              # variables + contrôles en ligne du projet Supabase
+pnpm check:prod -- --offline # variables uniquement
+```
+
+Le script signale chaque point bloquant (mode démo actif, URL locale ou avec « / » final, secret trop court ou
+exposé au navigateur, clé service identique à la clé anon…) et, en ligne : Supabase joignable, migrations
+appliquées, bucket `documents` présent, inscription libre désactivée, fournisseurs SSO déclarés réellement
+activés, organisation créée. Code de sortie non nul en cas d'erreur (utilisable en CI de déploiement).
 
 ## 3. Application (Vercel)
 
@@ -75,11 +93,11 @@ Ensuite, dans l'application :
 **Microsoft 365** — Entra ID › Inscriptions d'applications › Nouvelle inscription :
 - type de compte : celui de l'organisation (ou multilocataire) ;
 - URI de redirection (Web) : `<NEXT_PUBLIC_SITE_URL>/settings/integrations/microsoft/callback` ;
-- autorisations déléguées Microsoft Graph : `User.Read`, `Mail.Send`, `Calendars.ReadWrite`, `offline_access` ;
+- autorisations déléguées Microsoft Graph : `User.Read`, `Mail.Send`, `Mail.Read`, `Calendars.ReadWrite`, `offline_access` ;
 - un secret client → `MS_CLIENT_SECRET`, l'ID d'application → `MS_CLIENT_ID`, l'ID de locataire → `MS_TENANT_ID`.
 
 **Google Workspace** — Google Cloud Console › API et services :
-- activer l'API Gmail et l'API Google Calendar ;
+- activer l'API Gmail et l'API Google Calendar ; portées demandées : envoi (`gmail.send`), lecture (`gmail.readonly`), agenda (`calendar.events`) ;
 - écran de consentement (interne à l'organisation Workspace) ;
 - identifiant OAuth « Application Web », URI de redirection : `<NEXT_PUBLIC_SITE_URL>/settings/integrations/google/callback`.
 
@@ -99,7 +117,15 @@ Puis, connecté en direction : Paramètres › Intégrations › Connecter. Les 
 - Boîte connectée (section 5) : portées de lecture `Mail.Read` (Microsoft) ou `gmail.readonly` (Google) —
   reconnecter la boîte si elle l'a été avant cette version.
 - Relève automatique toutes les 10 minutes : `vercel.json` (Vercel Cron appelle `/jobs/inbox` avec
-  `Authorization: Bearer $CRON_SECRET`). Hors Vercel : tout planificateur qui appelle cette URL avec ce secret.
+  `Authorization: Bearer $CRON_SECRET`). Cette fréquence suppose une offre Vercel qui autorise les tâches
+  planifiées infra-journalières (vérifier la grille Vercel en vigueur : l'offre gratuite les limitait à une
+  exécution par jour). Sinon, ou hors Vercel, faire appeler l'URL par Supabase (extensions `pg_cron` + `pg_net`) :
+  ```sql
+  select cron.schedule('inbox', '*/10 * * * *', $$
+    select net.http_get('https://gestion.entreprise.fr/jobs/inbox',
+      headers => jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>'))
+  $$);
+  ```
 - Seuls les messages de contacts clients et de fournisseurs connus sont rangés ; les autres sont ignorés.
 
 ## 8. Exploitation
@@ -108,4 +134,17 @@ Puis, connecté en direction : Paramètres › Intégrations › Connecter. Les 
 - **Traitements quotidiens** : historique dans Paramètres › Page technique (« Traitements planifiés »), lancement manuel possible.
 - **Journal d'audit** : Pilotage › Journal d'audit (factures, paiements, devis, salaires, droits, comptes…), export CSV.
 - **Mises à jour du schéma** : nouvelles migrations dans `supabase/migrations/`, puis `supabase db push`.
-- **Vérifications avant mise en ligne** : `pnpm typecheck && pnpm lint && pnpm test && pnpm build`, puis `pnpm test:e2e` sur une base de démo.
+- **Vérifications avant mise en ligne** : `pnpm check:prod`, puis `pnpm typecheck && pnpm lint && pnpm test && pnpm build`
+  et `pnpm test:e2e` sur une base de démo. La CI GitHub (`.github/workflows/ci.yml`) exécute tout cela à chaque
+  pull request, bout en bout compris (Supabase local + Playwright).
+
+## 9. Ce qu'il reste à fournir
+
+| Élément | Qui | Pour quoi |
+| --- | --- | --- |
+| Projet Supabase (région UE) : URL, clé anon, clé service | entreprise | base, authentification, stockage |
+| Compte Vercel (ou autre hébergeur Node 20+) relié au dépôt | entreprise | application |
+| Nom de domaine et fournisseur SMTP transactionnel | entreprise | URL publique, e-mails de connexion |
+| Inscription Entra ID et/ou Google Cloud | administrateur messagerie | envois, agenda, e-mails entrants, SSO |
+| Clé API Anthropic | entreprise | assistant IA réel |
+| Contrat avec une plateforme agréée (PDP) | direction financière | transmission des factures électroniques |
