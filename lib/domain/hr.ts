@@ -137,3 +137,50 @@ export function zonedToIso(day: string, time: string, timeZone: string): string 
   const asLocal = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute));
   return new Date(guess - (asLocal - guess)).toISOString();
 }
+
+export interface RttRules {
+  referenceWeeklyHours: number;
+  workedWeeksPerYear: number;
+  forfaitDays: number;
+  paidLeaveDays: number;
+}
+
+/**
+ * Jours de RTT acquis sur une année civile complète.
+ * - Horaire : les heures au-delà de la durée de référence, sur les semaines travaillées,
+ *   converties en journées (horaire hebdomadaire / 5). Rien à 35 h ou moins.
+ * - Forfait jours : jours de l'année − week-ends − fériés tombant en semaine − congés payés − forfait.
+ */
+export function rttAnnualDays(i: { regime: "hours" | "forfait_jours"; weeklyHours: number; workRate: number; year: number }, r: RttRules): number {
+  if (i.regime === "forfait_jours") {
+    const start = `${i.year}-01-01`;
+    const end = `${i.year}-12-31`;
+    const days = Math.round((utc(end).getTime() - utc(start).getTime()) / 86_400_000) + 1;
+    const weekdaysOff = days - businessDays(start, end); // week-ends + fériés en semaine
+    return Math.max(0, Math.round((days - weekdaysOff - r.paidLeaveDays - r.forfaitDays) * i.workRate * 10) / 10);
+  }
+  const extra = i.weeklyHours - r.referenceWeeklyHours;
+  if (extra <= 0) return 0;
+  return Math.round(((extra * r.workedWeeksPerYear) / (i.weeklyHours / 5)) * i.workRate * 10) / 10;
+}
+
+/** Solde de RTT de l'année civile : acquis au prorata des mois écoulés (ou depuis l'embauche). */
+export function rttBalance(i: {
+  today: string;
+  startDate: string | null;
+  regime: "hours" | "forfait_jours";
+  weeklyHours: number;
+  workRate: number;
+  leaves: { kind: string; status: string; starts_on: string; days: number }[];
+}, r: RttRules) {
+  const year = Number(i.today.slice(0, 4));
+  const annual = rttAnnualDays({ regime: i.regime, weeklyHours: i.weeklyHours, workRate: i.workRate, year }, r);
+  const from = i.startDate && i.startDate > `${year}-01-01` ? i.startDate : `${year}-01-01`;
+  // Mois commencés depuis le début de la période, mois en cours compris
+  const months = Math.max(0, Math.min(12, (year - Number(from.slice(0, 4))) * 12 + Number(i.today.slice(5, 7)) - Number(from.slice(5, 7)) + 1));
+  const acquired = Math.round(((annual * months) / 12) * 10) / 10;
+  const inYear = i.leaves.filter((l) => l.kind === "rtt" && l.starts_on.startsWith(String(year)));
+  const taken = inYear.filter((l) => l.status === "approved").reduce((s, l) => s + Number(l.days), 0);
+  const pending = inYear.filter((l) => l.status === "pending").reduce((s, l) => s + Number(l.days), 0);
+  return { annual, acquired, taken, pending, available: Math.round((acquired - taken - pending) * 10) / 10 };
+}

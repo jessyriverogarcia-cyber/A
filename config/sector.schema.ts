@@ -176,6 +176,13 @@ export const SectorConfigSchema = z.object({
     /** "per_contract" : 12 ou 13 mois choisi sur chaque contrat. */
     monthsMode: z.enum(["12", "13", "per_contract"]),
     collectiveAgreement: z.string().optional(),
+    /** RTT : durée légale de référence, semaines travaillées par an, forfait jours des cadres. */
+    rtt: z.object({
+      referenceWeeklyHours: z.number().positive(),
+      workedWeeksPerYear: z.number().positive(),
+      forfaitDays: z.number().int().positive(),
+      paidLeaveDays: z.number().int().positive(),
+    }),
   }),
   hud: z.object({
     layout: z.enum(["A", "B", "hybrid"]),

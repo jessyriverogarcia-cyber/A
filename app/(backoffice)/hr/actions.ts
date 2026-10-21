@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { can, requireUser } from "@/lib/auth";
 import type { Action, Module } from "@/lib/domain/permissions";
-import { businessDays, zonedToIso } from "@/lib/domain/hr";
+import { businessDays, rttBalance, zonedToIso } from "@/lib/domain/hr";
 import { sectorConfig } from "@/config/sector.config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,6 +30,14 @@ export async function requestLeaveAction(form: FormData) {
   if (!start || !end || end < start || !LEAVE_KINDS.includes(kind)) redirect(`${back}?err=${q("Dates ou type de congé invalides.")}`);
   const days = form.get("half") === "on" && start === end ? 0.5 : businessDays(start, end);
   if (days <= 0) redirect(`${back}?err=${q("Aucun jour ouvré sur cette période.")}`);
+  if (kind === "rtt") {
+    const [{ data: me }, { data: mine }] = await Promise.all([
+      db.from("employees").select("start_date, time_regime, weekly_hours, work_rate").eq("id", ctx.employee_id).single(),
+      db.from("leave_requests").select("kind, status, starts_on, days").eq("employee_id", ctx.employee_id),
+    ]);
+    const b = rttBalance({ today: start, startDate: me?.start_date ?? null, regime: (me?.time_regime ?? "hours") as "hours" | "forfait_jours", weeklyHours: Number(me?.weekly_hours ?? 35), workRate: Number(me?.work_rate ?? 1), leaves: (mine ?? []).map((l) => ({ ...l, days: Number(l.days) })) }, sectorConfig.payroll.rtt);
+    if (days > b.available) redirect(`${back}?err=${q(b.annual ? `Solde RTT insuffisant : ${b.available} j disponible(s) pour ${days} j demandé(s).` : "Votre horaire n'ouvre pas droit à des RTT.")}`);
+  }
   const { data, error } = await db.from("leave_requests").insert({ org_id: ctx.org.id, employee_id: ctx.employee_id, kind, starts_on: start, ends_on: end, days, status: "pending", comment: str(form.get("comment")) }).select("id").single();
   if (error) redirect(`${back}?err=${q(error.message)}`);
   await db.from("activity_events").insert({ org_id: ctx.org.id, type: "leave.requested", entity_type: "leave_request", entity_id: data.id, actor: ctx.user_id, payload: { name: ctx.full_name, days, kind } });

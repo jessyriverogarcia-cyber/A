@@ -230,6 +230,9 @@ async function main() {
         department: { direction: "Direction", production_manager: "Production", operator: "Production", quality: "Qualité", aero_engineer: "Ingénierie aéro", sales: "Commercial", hr: "RH", accounting: "Finance", read_only: "Finance" }[roleKey],
         contract_type: roleKey === "read_only" ? "Stage" : i % 9 === 8 ? "CDD" : "CDI",
         work_rate: i % 7 === 6 ? 0.8 : 1,
+        // Accord fictif : atelier à 39 h (RTT en heures), cadres au forfait jours
+        time_regime: ["direction", "production_manager", "aero_engineer", "sales", "hr"].includes(roleKey) ? "forfait_jours" : "hours",
+        weekly_hours: roleKey === "operator" ? 39 : 35,
         start_date: day(-int(120, 3000)),
         skills: roleKey === "operator" ? [pick(["FDM", "SLA", "SLS", "Métal", "Portique"]), "Sécurité poudres"] : [],
         avatar_color: palette[i % palette.length],

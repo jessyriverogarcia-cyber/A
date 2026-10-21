@@ -169,7 +169,12 @@ const input: SectorConfigInput = {
     { id: "read_only", label: "Lecture seule", description: "Consultation sans modification", readOnly: true },
   ],
 
-  payroll: { monthsMode: "per_contract", collectiveAgreement: "Métallurgie (IDCC 3248)" },
+  payroll: {
+    monthsMode: "per_contract",
+    collectiveAgreement: "Métallurgie (IDCC 3248)",
+    // Accord d'entreprise fictif : 39 h en atelier (RTT en heures), forfait 218 jours pour les cadres.
+    rtt: { referenceWeeklyHours: 35, workedWeeksPerYear: 47, forfaitDays: 218, paidLeaveDays: 25 },
+  },
 
   hud: { layout: "hybrid" },
 

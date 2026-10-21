@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { todayIso } from "@/lib/domain/kpis";
 import { presenceFromBadges } from "@/lib/domain/presence";
-import { leaveBalance, mondayOf, overtime } from "@/lib/domain/hr";
+import { leaveBalance, mondayOf, overtime, rttBalance } from "@/lib/domain/hr";
 import { badgesByEmployee, daysBetweenIso, hoursPerDay } from "@/lib/services/hr";
 import { formatDate, formatNumber } from "@/lib/format";
 import { Badge, Card, CardTitle, Input } from "@/components/ui/primitives";
@@ -32,7 +32,7 @@ export default async function MePage({ searchParams }: { searchParams: Promise<R
   const week = daysBetweenIso(monday, new Date(new Date(`${monday}T00:00:00Z`).getTime() + 6 * 86_400_000).toISOString().slice(0, 10));
 
   const [{ data: me }, { data: leaves }, badges, { data: expenses }, { data: wos }] = await Promise.all([
-    db.from("employees").select("first_name, last_name, job_title, start_date, work_rate, weekly_hours, leave_carryover").eq("id", ctx.employee_id).single(),
+    db.from("employees").select("first_name, last_name, job_title, start_date, work_rate, weekly_hours, leave_carryover, time_regime").eq("id", ctx.employee_id).single(),
     db.from("leave_requests").select("id, kind, starts_on, ends_on, days, status, rejection_reason").eq("employee_id", ctx.employee_id).order("starts_on", { ascending: false }),
     badgesByEmployee(db, monday, today, ctx.employee_id),
     db.from("expenses").select("id, label, category, amount, km, spent_on, status, receipt_path, rejection_reason, work_order_id, billable").eq("employee_id", ctx.employee_id).order("spent_on", { ascending: false }).limit(20),
@@ -47,6 +47,7 @@ export default async function MePage({ searchParams }: { searchParams: Promise<R
   const weekHours = [...perDay.values()].reduce((s, h) => s + h, 0);
   const balance = leaveBalance({ today, startDate: me?.start_date ?? null, workRate: Number(me?.work_rate ?? 1), carryover: Number(me?.leave_carryover ?? 0), leaves: (leaves ?? []).map((l) => ({ ...l, days: Number(l.days) })) });
   const contract = Number(me?.weekly_hours ?? 35) * Number(me?.work_rate ?? 1);
+  const rtt = rttBalance({ today, startDate: me?.start_date ?? null, regime: (me?.time_regime ?? "hours") as "hours" | "forfait_jours", weeklyHours: Number(me?.weekly_hours ?? 35), workRate: Number(me?.work_rate ?? 1), leaves: (leaves ?? []).map((l) => ({ ...l, days: Number(l.days) })) }, sectorConfig.payroll.rtt);
   const badge = (kind: string, label: string, variant: "primary" | "secondary" = "primary") => (
     <form action={selfBadgeAction}>
       <input type="hidden" name="kind" value={kind} />
@@ -62,7 +63,7 @@ export default async function MePage({ searchParams }: { searchParams: Promise<R
         <Stat label="Aujourd'hui" value={state === "present" ? "Au poste" : state === "on_break" ? "En pause" : "Pas pointé"} tone={state === "present" ? "ok" : state === "on_break" ? "accent" : "neutral"} hint={todayEvents.length ? `depuis ${time(todayEvents.at(-1)!.at)}` : undefined} />
         <Stat label="Heures cette semaine" value={`${formatNumber(Math.round(weekHours * 10) / 10)} h`} hint={`contrat ${formatNumber(contract)} h${overtime(weekHours, contract) ? ` · +${formatNumber(overtime(weekHours, contract))} h sup.` : ""}`} />
         <Stat label="Congés disponibles" value={`${formatNumber(balance.available)} j`} hint={`${formatNumber(balance.acquired)} acquis · ${formatNumber(balance.taken)} pris · ${formatNumber(balance.pending)} en attente`} tone={balance.available > 0 ? "ok" : "warn"} />
-        <Stat label="Demandes en attente" value={(leaves ?? []).filter((l) => l.status === "pending").length} />
+        <Stat label="RTT disponibles" value={rtt.annual ? `${formatNumber(rtt.available)} j` : "—"} hint={rtt.annual ? `${formatNumber(rtt.acquired)} acquis sur ${formatNumber(rtt.annual)} cette année · ${formatNumber(rtt.taken)} pris` : "pas de RTT pour votre horaire"} tone={rtt.available > 0 ? "ok" : "neutral"} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -100,7 +101,7 @@ export default async function MePage({ searchParams }: { searchParams: Promise<R
           <CardTitle>Demander un congé</CardTitle>
           <form action={requestLeaveAction} className="space-y-2">
             <input type="hidden" name="back" value="/me" />
-            <Select name="kind" defaultValue="paid">
+            <Select name="kind" defaultValue="paid" data-testid="leave-kind">
               {Object.entries(LEAVE_KIND).filter(([k]) => k !== "sick").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </Select>
             <div className="grid grid-cols-2 gap-2">

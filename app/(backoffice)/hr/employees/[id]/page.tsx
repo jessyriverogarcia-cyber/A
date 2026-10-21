@@ -4,7 +4,7 @@ import { sectorConfig } from "@/config/sector.config";
 import { can, requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { todayIso } from "@/lib/domain/kpis";
-import { leaveBalance, mondayOf, overtime } from "@/lib/domain/hr";
+import { leaveBalance, mondayOf, overtime, rttBalance } from "@/lib/domain/hr";
 import { badgesByEmployee, hoursPerDay } from "@/lib/services/hr";
 import { formatDate, formatMoney, formatNumber } from "@/lib/format";
 import { Badge, Card, CardTitle } from "@/components/ui/primitives";
@@ -38,6 +38,7 @@ export default async function EmployeePage({ params, searchParams }: { params: P
   const weekLogged = (hours ?? []).reduce((s, h) => s + Number(h.hours), 0);
   const contract = Number(e.weekly_hours) * Number(e.work_rate);
   const balance = leaveBalance({ today, startDate: e.start_date, workRate: Number(e.work_rate), carryover: Number(e.leave_carryover), leaves: leaves.map((l) => ({ ...l, days: Number(l.days) })) });
+  const rtt = rttBalance({ today, startDate: e.start_date, regime: e.time_regime as "hours" | "forfait_jours", weeklyHours: Number(e.weekly_hours), workRate: Number(e.work_rate), leaves: leaves.map((l) => ({ ...l, days: Number(l.days) })) }, sectorConfig.payroll.rtt);
   const salary = salaries?.[0];
   const manager = e.manager as unknown as { id: string; first_name: string; last_name: string } | null;
   const trainings = (e.trainings ?? []) as { id: string; title: string; status: string; scheduled_on: string | null; expires_on: string | null }[];
@@ -104,7 +105,8 @@ export default async function EmployeePage({ params, searchParams }: { params: P
             <CardTitle>Contrat</CardTitle>
             <dl className="space-y-1.5 text-sm">
               <div className="flex justify-between"><dt className="text-muted">Type</dt><dd>{e.contract_type}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Temps de travail</dt><dd>{Math.round(Number(e.work_rate) * 100)} % · {formatNumber(contract)} h/sem.</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Temps de travail</dt><dd>{Math.round(Number(e.work_rate) * 100)} % · {e.time_regime === "forfait_jours" ? `forfait ${sectorConfig.payroll.rtt.forfaitDays} j` : `${formatNumber(contract)} h/sem.`}</dd></div>
+              <div className="flex justify-between" data-testid="employee-rtt"><dt className="text-muted">RTT {today.slice(0, 4)}</dt><dd>{rtt.annual ? `${formatNumber(rtt.available)} j dispo. · ${formatNumber(rtt.acquired)} acquis / ${formatNumber(rtt.annual)}` : "aucun"}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Responsable</dt><dd>{manager ? <Link href={`/hr/employees/${manager.id}`} className="hover:text-accent">{manager.first_name} {manager.last_name}</Link> : "—"}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">E-mail</dt><dd className="truncate">{e.email}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Compétences</dt><dd className="text-right">{e.skills.join(", ") || "—"}</dd></div>

@@ -95,3 +95,22 @@ describe("fuseau", () => {
     expect(zonedToIso("2026-12-01", "17:00", "Europe/Paris")).toBe("2026-12-01T16:00:00.000Z");
   });
 });
+
+describe("RTT", () => {
+  const rules = { referenceWeeklyHours: 35, workedWeeksPerYear: 47, forfaitDays: 218, paidLeaveDays: 25 };
+  it("forfait jours : 365 − 104 week-ends − 9 fériés en semaine − 25 CP − 218 = 9 jours en 2026", async () => {
+    const { rttAnnualDays } = await import("@/lib/domain/hr");
+    expect(rttAnnualDays({ regime: "forfait_jours", weeklyHours: 0, workRate: 1, year: 2026 }, rules)).toBe(9);
+  });
+  it("horaire : 39 h → 4 h × 47 semaines / 7,8 h par jour ≈ 24,1 jours ; rien à 35 h", async () => {
+    const { rttAnnualDays } = await import("@/lib/domain/hr");
+    expect(rttAnnualDays({ regime: "hours", weeklyHours: 39, workRate: 1, year: 2026 }, rules)).toBe(24.1);
+    expect(rttAnnualDays({ regime: "hours", weeklyHours: 35, workRate: 1, year: 2026 }, rules)).toBe(0);
+  });
+  it("solde : prorata des mois, pris et en attente déduits ; embauche en cours d'année", async () => {
+    const { rttBalance } = await import("@/lib/domain/hr");
+    const b = rttBalance({ today: "2026-10-21", startDate: "2020-01-01", regime: "forfait_jours", weeklyHours: 0, workRate: 1, leaves: [{ kind: "rtt", status: "approved", starts_on: "2026-05-15", days: 2 }, { kind: "rtt", status: "pending", starts_on: "2026-11-02", days: 1 }, { kind: "rtt", status: "approved", starts_on: "2025-12-26", days: 1 }] }, rules);
+    expect(b).toEqual({ annual: 9, acquired: 7.5, taken: 2, pending: 1, available: 4.5 });
+    expect(rttBalance({ today: "2026-10-21", startDate: "2026-09-01", regime: "hours", weeklyHours: 39, workRate: 1, leaves: [] }, rules).acquired).toBe(4);
+  });
+});
