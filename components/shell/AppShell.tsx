@@ -7,6 +7,7 @@ import type { Module } from "@/lib/domain/permissions";
 import { signOut } from "@/app/(auth)/login/actions";
 import { createClient } from "@/lib/supabase/server";
 import { LiveBell } from "@/components/realtime/LiveBell";
+import { mailMode } from "@/lib/integrations/mail";
 
 type NavItem = { key: string; href: string; module?: Module; phase?: number };
 
@@ -27,6 +28,7 @@ function navItems(): NavItem[] {
     { key: "me", href: "/me" },
     { key: "dashboard", href: "/dashboard" },
     ...sectorConfig.modulesPriority.map((m) => moduleRoutes[m]).filter(Boolean),
+    { key: "integrations", href: "/settings/integrations", module: "settings" },
     { key: "tech", href: "/settings/tech" },
     { key: "security", href: "/settings/security" },
   ];
@@ -35,8 +37,8 @@ function navItems(): NavItem[] {
 export async function AppShell({ ctx, children }: { ctx: UserContext; children: React.ReactNode }) {
   const t = await getTranslations();
   const items = navItems().filter((i) => !i.module || can(ctx, i.module));
-  const simulated = sectorConfig.integrations.mode === "simulated";
   const db = await createClient();
+  const simulated = (await mailMode(db)).simulated;
   const { count: unread } = await db.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", ctx.user_id).is("read_at", null);
 
   return (

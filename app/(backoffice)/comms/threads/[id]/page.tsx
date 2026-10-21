@@ -11,6 +11,7 @@ import { Badge, Card, CardTitle } from "@/components/ui/primitives";
 import { Flash, PageHeader, Select, SimulatedBadge, Textarea } from "@/components/ui/backoffice";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { archiveThreadAction, assignThreadAction, regenerateDraftAction, sendReplyAction, simulateInboundAction } from "../../actions";
+import { mailMode } from "@/lib/integrations/mail";
 import { LiveRefresh } from "@/components/realtime/LiveRefresh";
 
 export const metadata = { title: "Échange" };
@@ -41,7 +42,7 @@ export default async function ThreadPage({ params, searchParams }: { params: Pro
   const proposal = draft?.body ?? (lastIn && !internal ? suggestReply(lastIn.body, replyContext(c, ctx.full_name)).body : "");
   const write = can(ctx, "comms", "create");
   const update = can(ctx, "comms", "update");
-  const simulated = sectorConfig.integrations.mode === "simulated";
+  const simulated = (await mailMode(db)).simulated;
   const who = c.client?.name ?? c.supplier?.name ?? "Interne";
 
   return (

@@ -9,6 +9,7 @@ import { Badge, Card, CardTitle } from "@/components/ui/primitives";
 import { Flash, LinkButton, PageHeader, Stat } from "@/components/ui/backoffice";
 import { MailComposer } from "@/components/crm/MailComposer";
 import { followUpQuoteAction } from "./actions";
+import { mailMode } from "@/lib/integrations/mail";
 
 export const metadata = { title: "Commercial" };
 
@@ -33,6 +34,7 @@ export default async function CrmHome({ searchParams }: { searchParams: Promise<
   const sp = await searchParams;
   const ctx = await requireUser();
   const db = await createClient();
+  const mailbox = await mailMode(db);
   const today = todayIso(sectorConfig.company.timezone);
   const in5 = new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10);
 
@@ -119,7 +121,7 @@ export default async function CrmHome({ searchParams }: { searchParams: Promise<
                   </p>
                 </div>
                 {canWrite && (
-                  <MailComposer
+                  <MailComposer simulated={mailbox.simulated}
                     label="Relancer"
                     title={`Relance — ${qt.number}`}
                     to={qt.contacts?.email ?? null}

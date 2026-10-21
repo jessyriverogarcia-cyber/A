@@ -5,6 +5,7 @@ import { z } from "zod";
 import { can, requireUser } from "@/lib/auth";
 import type { Action } from "@/lib/domain/permissions";
 import { getMailProvider } from "@/lib/integrations/mail";
+import { renderInvoicePdf } from "@/lib/pdf/render";
 import { createInvoiceFromWorkOrder, saveInvoiceLines } from "@/lib/services/finance";
 import { nextNumber } from "@/lib/services/crm";
 import { createClient } from "@/lib/supabase/server";
@@ -56,14 +57,14 @@ async function mailFor(invoiceId: string, form: FormData, author: string, orgId:
   const db = await createClient();
   const { data: inv } = await db.from("invoices").select("number, client_id, work_order_id, contacts(email)").eq("id", invoiceId).single();
   if (!inv) throw new Error("Facture introuvable.");
-  const res = await getMailProvider(db, orgId).send({
+  const res = await (await getMailProvider(db, orgId)).send({
     to: (inv.contacts as unknown as { email: string | null } | null)?.email ?? null,
     subject: String(form.get("subject")),
     body: String(form.get("body")),
     clientId: inv.client_id,
     workOrderId: inv.work_order_id,
     author,
-    attachments: [{ name: `${inv.number}.pdf`, url: `/finance/invoices/${invoiceId}/pdf` }],
+    attachments: [{ name: `${inv.number}.pdf`, url: `/finance/invoices/${invoiceId}/pdf`, load: async () => { const pdf = await renderInvoicePdf(db, invoiceId); return pdf && { data: pdf.data, mime: "application/pdf" }; } }],
   });
   if (!res.ok) redirect(`/finance/invoices/${invoiceId}?err=${q(res.reason ?? "Échec de l'envoi")}`);
   return { inv, simulated: res.simulated };

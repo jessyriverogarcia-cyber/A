@@ -8,6 +8,7 @@ import { can, requireUser, type UserContext } from "@/lib/auth";
 import { computeQuoteTotals } from "@/lib/domain/quote";
 import { fromCents, toCents } from "@/lib/domain/money";
 import { getMailProvider } from "@/lib/integrations/mail";
+import { renderQuotePdf } from "@/lib/pdf/render";
 import { acceptQuote, nextNumber } from "@/lib/services/crm";
 import { createClient } from "@/lib/supabase/server";
 import type { Action } from "@/lib/domain/permissions";
@@ -199,14 +200,14 @@ async function sendMail(ctx: UserContext, quoteId: string, form: FormData, kind:
   const { data: quote } = await db.from("quotes").select("number, client_id, deal_id, status, followups, total_ht, contacts(email)").eq("id", quoteId).single();
   if (!quote) throw new Error("Devis introuvable.");
   if (kind === "send" && Number(quote.total_ht) <= 0) redirect(`/crm/quotes/${quoteId}?err=${q("Ajoutez au moins une ligne avant d'envoyer.")}`);
-  const mail = getMailProvider(db, ctx.org.id);
+  const mail = await getMailProvider(db, ctx.org.id);
   const res = await mail.send({
     to: (quote.contacts as unknown as { email: string | null } | null)?.email ?? null,
     subject: String(form.get("subject")),
     body: String(form.get("body")),
     clientId: quote.client_id,
     author: ctx.full_name,
-    attachments: [{ name: `${quote.number}.pdf`, url: `/crm/quotes/${quoteId}/pdf` }],
+    attachments: [{ name: `${quote.number}.pdf`, url: `/crm/quotes/${quoteId}/pdf`, load: async () => { const pdf = await renderQuotePdf(db, quoteId); return pdf && { data: pdf.data, mime: "application/pdf" }; } }],
   });
   if (!res.ok) redirect(`/crm/quotes/${quoteId}?err=${q(res.reason ?? "Échec de l'envoi")}`);
   return { quote, db, simulated: res.simulated };

@@ -7,6 +7,7 @@ import { Input, Card } from "@/components/ui/primitives";
 import { EmptyState, Field, Flash, PageHeader, Select, SimulatedBadge, Textarea } from "@/components/ui/backoffice";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { newThreadAction } from "../actions";
+import { mailMode } from "@/lib/integrations/mail";
 
 export const metadata = { title: "Nouveau message" };
 
@@ -32,7 +33,7 @@ export default async function NewMessagePage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <PageHeader back={{ href: "/comms", label: "Boîte de réception" }} title="Nouveau message" actions={kind !== "internal" && sectorConfig.integrations.mode === "simulated" ? <SimulatedBadge /> : undefined} />
+      <PageHeader back={{ href: "/comms", label: "Boîte de réception" }} title="Nouveau message" actions={kind !== "internal" && (await mailMode(db)).simulated ? <SimulatedBadge /> : undefined} />
       <Flash ok={sp.ok} err={sp.err} />
       <nav className="mb-4 flex gap-2">
         {KINDS.map((k) => (

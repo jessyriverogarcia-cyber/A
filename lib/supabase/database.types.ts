@@ -623,6 +623,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"integration_accounts": {
+                  Row: {
+                    "account_email": string,"connected_at": string,"connected_by": string | null,"id": string,"last_error": string | null,"last_used_at": string | null,"org_id": string,"provider": string,"scopes": (string)[],"token_ciphertext": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_email": string,"connected_at"?: string,"connected_by"?: string | null,"id"?: string,"last_error"?: string | null,"last_used_at"?: string | null,"org_id": string,"provider": string,"scopes"?: (string)[],"token_ciphertext": string
+                  }
+                  Update: {
+                    "account_email"?: string,"connected_at"?: string,"connected_by"?: string | null,"id"?: string,"last_error"?: string | null,"last_used_at"?: string | null,"org_id"?: string,"provider"?: string,"scopes"?: (string)[],"token_ciphertext"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "integration_accounts_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "orgs"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"invoice_lines": {
                   Row: {
                     "catalog_item_id": string | null,"created_at": string,"created_by": string | null,"description": string,"discount": number,"id": string,"invoice_id": string,"org_id": string,"position": number,"quantity": number,"unit_price": number,"updated_at": string,"vat_rate": number
@@ -1668,6 +1688,9 @@ isOneToOne: false
             "accept_quote":
 { Args: { "p_progress": number,"p_quote": string,"p_site_key": string,"p_stage": string,"p_technology": string,"p_wo_prefix": string,"p_zone_key": string }; Returns: Json
                            },
+"integration_secret":
+{ Args: { "p_provider": string }; Returns: string
+                           },
 "my_context":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
@@ -1688,8 +1711,17 @@ isOneToOne: false
 "refresh_overdue_invoices":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"remove_integration":
+{ Args: { "p_provider": string }; Returns: undefined
+                           },
 "run_daily_jobs":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"save_integration":
+{ Args: { "p_ciphertext": string,"p_email": string,"p_provider": string,"p_scopes": (string)[] }; Returns: undefined
+                           },
+"touch_integration":
+{ Args: { "p_ciphertext": string,"p_error": string,"p_provider": string }; Returns: undefined
                            }
           }
           Enums: {

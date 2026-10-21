@@ -14,6 +14,7 @@ import { MailComposer } from "@/components/crm/MailComposer";
 import { InvoiceEditor } from "@/components/finance/InvoiceEditor";
 import { INVOICE_KIND, INVOICE_STATUS } from "@/components/finance/status";
 import { creditNoteAction, deleteDraftAction, dunningAction, recordPaymentAction, sendInvoiceAction } from "../../actions";
+import { mailMode } from "@/lib/integrations/mail";
 
 export const metadata = { title: "Facture" };
 
@@ -24,6 +25,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
   const sp = await searchParams;
   const ctx = await requireUser();
   const db = await createClient();
+  const mailbox = await mailMode(db);
   const { data: inv } = await db
     .from("invoices")
     .select("*, invoice_lines(*), clients(id, name), contacts(first_name, last_name, email), work_orders(id, number, title), quotes(id, number), payments(id, amount, paid_on, method), dunning_steps(id, level, sent_at, note)")
@@ -95,10 +97,10 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
               </form>
             )}
             {write && dunning && level && (
-              <MailComposer label={`Relance niveau ${level}`} title={`Relance niveau ${level} — ${inv.number}`} to={contact?.email ?? null} subject={dunning.subject} body={dunning.body} action={dunningAction} hidden={{ invoice_id: inv.id, level: String(level) }} variant="secondary" testId="invoice-dunning" />
+              <MailComposer simulated={mailbox.simulated} label={`Relance niveau ${level}`} title={`Relance niveau ${level} — ${inv.number}`} to={contact?.email ?? null} subject={dunning.subject} body={dunning.body} action={dunningAction} hidden={{ invoice_id: inv.id, level: String(level) }} variant="secondary" testId="invoice-dunning" />
             )}
             {write && draft && (
-              <MailComposer label="Émettre et envoyer" title={`Envoyer ${inv.number}`} to={contact?.email ?? null} subject={send.subject} body={send.body} action={sendInvoiceAction} hidden={{ invoice_id: inv.id }} testId="send-invoice" />
+              <MailComposer simulated={mailbox.simulated} label="Émettre et envoyer" title={`Envoyer ${inv.number}`} to={contact?.email ?? null} subject={send.subject} body={send.body} action={sendInvoiceAction} hidden={{ invoice_id: inv.id }} testId="send-invoice" />
             )}
           </>
         }

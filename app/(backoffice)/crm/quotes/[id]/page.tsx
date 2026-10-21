@@ -13,6 +13,7 @@ import { MailComposer } from "@/components/crm/MailComposer";
 import { QuoteEditor, type CatalogItem, type EditorLine } from "@/components/crm/QuoteEditor";
 import { QUOTE_STATUS } from "@/components/crm/status";
 import { acceptQuoteAction, duplicateQuoteAction, followUpQuoteAction, rejectQuoteAction, sendQuoteAction } from "../../actions";
+import { mailMode } from "@/lib/integrations/mail";
 
 export const metadata = { title: "Devis" };
 
@@ -21,6 +22,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const sp = await searchParams;
   const ctx = await requireUser();
   const db = await createClient();
+  const mailbox = await mailMode(db);
   const [{ data: q }, { data: catalog }] = await Promise.all([
     db
       .from("quotes")
@@ -86,11 +88,11 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
               </form>
             )}
             {write && q.status === "draft" && (
-              <MailComposer label="Envoyer au client" title={`Envoyer ${q.number}`} to={contact?.email ?? null} subject={send.subject} body={send.body} action={sendQuoteAction} hidden={{ quote_id: q.id }} testId="send-quote" />
+              <MailComposer simulated={mailbox.simulated} label="Envoyer au client" title={`Envoyer ${q.number}`} to={contact?.email ?? null} subject={send.subject} body={send.body} action={sendQuoteAction} hidden={{ quote_id: q.id }} testId="send-quote" />
             )}
             {write && q.status === "sent" && (
               <>
-                <MailComposer label="Relancer" title={`Relance — ${q.number}`} to={contact?.email ?? null} subject={follow.subject} body={follow.body} action={followUpQuoteAction} hidden={{ quote_id: q.id }} variant="secondary" testId="followup-quote" />
+                <MailComposer simulated={mailbox.simulated} label="Relancer" title={`Relance — ${q.number}`} to={contact?.email ?? null} subject={follow.subject} body={follow.body} action={followUpQuoteAction} hidden={{ quote_id: q.id }} variant="secondary" testId="followup-quote" />
                 <form action={acceptQuoteAction}>
                   <input type="hidden" name="quote_id" value={q.id} />
                   <SubmitButton testId="accept-quote" confirm={`Le client a accepté ${q.number} ? Un ${sectorConfig.workOrder.label.toLowerCase()} sera créé.`}>

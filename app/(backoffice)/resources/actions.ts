@@ -65,7 +65,7 @@ export async function sendPoAction(form: FormData) {
   const id = String(form.get("po_id"));
   const { data: po } = await db.from("purchase_orders").select("number, status, supplier_id, suppliers(email)").eq("id", id).single();
   if (!po || po.status !== "draft") redirect(`/resources/purchase-orders/${id}?err=${q("Commande déjà envoyée.")}`);
-  const res = await getMailProvider(db, ctx.org.id).send({
+  const res = await (await getMailProvider(db, ctx.org.id)).send({
     to: (po.suppliers as unknown as { email: string | null } | null)?.email ?? null,
     subject: String(form.get("subject")),
     body: String(form.get("body")),

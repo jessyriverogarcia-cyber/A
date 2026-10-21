@@ -4,9 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { can, requireUser } from "@/lib/auth";
 import type { Action, Module } from "@/lib/domain/permissions";
-import { sectorConfig } from "@/config/sector.config";
 import { createClient } from "@/lib/supabase/server";
-import { getMailProvider } from "@/lib/integrations/mail";
+import { getMailProvider, mailMode } from "@/lib/integrations/mail";
 import { prepareDraft, threadContext } from "@/lib/services/comms";
 
 const q = (m: string) => encodeURIComponent(m);
@@ -40,8 +39,8 @@ export async function sendReplyAction(form: FormData) {
   }
 
   const docIds = form.getAll("attach").map(String);
-  const { data: docs } = docIds.length ? await db.from("documents").select("id, name").in("id", docIds) : { data: [] };
-  const provider = getMailProvider(db, ctx.org.id);
+  const { data: docs } = docIds.length ? await db.from("documents").select("id, name, storage_path, mime").in("id", docIds) : { data: [] };
+  const provider = await getMailProvider(db, ctx.org.id);
   const res = await provider.send({
     to: c.to,
     subject: str(form.get("subject")) ?? c.thread.subject,
@@ -51,7 +50,14 @@ export async function sendReplyAction(form: FormData) {
     supplierId: c.thread.supplier_id,
     workOrderId: c.thread.work_order_id,
     author: ctx.full_name,
-    attachments: (docs ?? []).map((d) => ({ name: d.name, url: `/comms/documents/${d.id}/download` })),
+    attachments: (docs ?? []).map((d) => ({
+      name: d.name,
+      url: `/comms/documents/${d.id}/download`,
+      load: async () => {
+        const { data } = await db.storage.from("documents").download(d.storage_path);
+        return data && { data: Buffer.from(await data.arrayBuffer()), mime: d.mime ?? "application/octet-stream" };
+      },
+    })),
   });
   if (!res.ok) redirect(`${back}?err=${q(res.reason ?? "Envoi impossible.")}`);
   await db.from("messages").delete().eq("thread_id", threadId).is("sent_at", null);
@@ -100,7 +106,7 @@ const SIMULATED_INBOUND = [
  */
 export async function simulateInboundAction(form: FormData) {
   const { ctx, db } = await guard("comms", "create");
-  if (sectorConfig.integrations.mode !== "simulated") redirect("/comms");
+  if (!(await mailMode(db)).simulated) redirect("/comms"); // une vraie boîte est connectée : pas de faux messages
   const id = String(form.get("thread_id"));
   const c = await threadContext(db, id);
   if (!c || c.thread.channel === "internal") redirect(`/comms?err=${q("Fil introuvable.")}`);
@@ -154,7 +160,7 @@ export async function newThreadAction(form: FormData) {
     const { data: s } = await db.from("suppliers").select("email").eq("id", supplierId!).maybeSingle();
     to = s?.email ?? null;
   }
-  const provider = getMailProvider(db, ctx.org.id);
+  const provider = await getMailProvider(db, ctx.org.id);
   const res = await provider.send({ to, subject, body, clientId, supplierId, workOrderId, author: ctx.full_name });
   if (!res.ok || !res.threadId) redirect(`${back}&err=${q(res.reason ?? "Envoi impossible.")}`);
   await db.from("threads").update({ assigned_employee: ctx.employee_id, work_order_id: workOrderId }).eq("id", res.threadId);

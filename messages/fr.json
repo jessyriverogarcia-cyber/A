@@ -40,7 +40,8 @@
     "tech": "Page technique",
     "security": "Sécurité du compte",
     "me": "Mon espace",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "integrations": "Intégrations"
   },
   "tech": {
     "title": "Page technique",

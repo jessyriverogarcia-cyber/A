@@ -18,6 +18,7 @@ export function MailComposer({
   hidden,
   variant = "primary",
   testId,
+  simulated = true,
 }: {
   label: string;
   title: string;
@@ -28,6 +29,8 @@ export function MailComposer({
   hidden: Record<string, string>;
   variant?: "primary" | "secondary";
   testId?: string;
+  /** Faux quand une boîte Microsoft 365 / Google est connectée : l'envoi est réel. */
+  simulated?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   return (
@@ -51,7 +54,7 @@ export function MailComposer({
           ))}
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">{title}</h2>
-            <SimulatedBadge />
+            {simulated ? <SimulatedBadge /> : <span className="text-xs font-medium text-ok">● envoi réel</span>}
           </div>
           <p className="text-sm text-muted">
             À : <span className="text-text">{to ?? "aucun e-mail de contact"}</span>

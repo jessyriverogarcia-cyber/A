@@ -12,6 +12,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { MailComposer } from "@/components/crm/MailComposer";
 import { PO_STATUS } from "@/components/resources/status";
 import { cancelPoAction, receivePoAction, sendPoAction, updatePoLinesAction } from "../../actions";
+import { mailMode } from "@/lib/integrations/mail";
 
 export const metadata = { title: "Commande fournisseur" };
 
@@ -20,6 +21,7 @@ export default async function PurchaseOrderPage({ params, searchParams }: { para
   const sp = await searchParams;
   const ctx = await requireUser();
   const db = await createClient();
+  const mailbox = await mailMode(db);
   const { data: po } = await db.from("purchase_orders").select("*, suppliers(name, email, phone, lead_time_days)").eq("id", id).maybeSingle();
   if (!po) notFound();
   const supplier = po.suppliers as unknown as { name: string; email: string | null; phone: string | null; lead_time_days: number | null };
@@ -52,7 +54,7 @@ export default async function PurchaseOrderPage({ params, searchParams }: { para
                 </form>
               )}
               {po.status === "draft" && (
-                <MailComposer label="Envoyer au fournisseur" title={`Envoyer ${po.number}`} to={supplier.email} subject={mail.subject} body={mail.body} action={sendPoAction} hidden={{ po_id: po.id }} testId="send-po" />
+                <MailComposer simulated={mailbox.simulated} label="Envoyer au fournisseur" title={`Envoyer ${po.number}`} to={supplier.email} subject={mail.subject} body={mail.body} action={sendPoAction} hidden={{ po_id: po.id }} testId="send-po" />
               )}
               {po.status === "sent" && (
                 <form action={receivePoAction}>

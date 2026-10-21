@@ -10,6 +10,7 @@ import { todayIso } from "@/lib/domain/kpis";
 import { sectorConfig } from "@/config/sector.config";
 import { Badge } from "@/components/ui/primitives";
 import { EmptyState, Flash, LinkButton, PageHeader, SimulatedBadge } from "@/components/ui/backoffice";
+import { mailMode } from "@/lib/integrations/mail";
 import { LiveRefresh } from "@/components/realtime/LiveRefresh";
 
 export const metadata = { title: "Communication" };
@@ -29,6 +30,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
   if (sp.thread) redirect(`/comms/threads/${sp.thread}`); // lien profond
   const ctx = await requireUser();
   const db = await createClient();
+  const mailbox = await mailMode(db);
   const filter = FILTERS.some((f) => f.id === sp.f) ? sp.f : "todo";
   const today = todayIso(sectorConfig.company.timezone);
 
@@ -72,7 +74,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
         subtitle="Tous les échanges, rangés par client, fournisseur et dossier. Les réponses sont préparées : relisez, envoyez."
         actions={
           <>
-            {sectorConfig.integrations.mode === "simulated" && <SimulatedBadge />}
+            {mailbox.simulated && <SimulatedBadge />}
             {write && <LinkButton href="/comms/new">Nouveau message</LinkButton>}
           </>
         }

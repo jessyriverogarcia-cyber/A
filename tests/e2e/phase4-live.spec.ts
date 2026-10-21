@@ -43,3 +43,15 @@ test("traitements planifiés : exécution manuelle, alertes notifiées une seule
   await expect(page.getByTestId("flash")).toContainText("Traitement exécuté : 0 notification");
   await expect(page.getByTestId("jobs")).toContainText("manuel");
 });
+
+test("intégrations : état réel affiché, rien n'est présenté comme connecté à tort", async ({ page }) => {
+  await login(page, "direction", "/settings/integrations");
+  await expect(page.getByTestId("integration-microsoft")).toContainText("non configuré");
+  await expect(page.getByTestId("integration-google")).toContainText("non configuré");
+  await expect(page.getByTestId("integration-ai")).toContainText("mode simulé");
+  await expect(page.getByTestId("integration-microsoft")).toContainText("/settings/integrations/microsoft/callback");
+  // La connexion est refusée tant que l'application n'a pas ses identifiants
+  await page.goto("/settings/integrations/microsoft/connect");
+  await expect(page.getByTestId("flash")).toContainText("non configurés");
+  await page.screenshot({ path: "test-results/screens/92-integrations.png", fullPage: true });
+});

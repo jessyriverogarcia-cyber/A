@@ -11,6 +11,7 @@ import { Flash, LinkButton, PageHeader, Stat } from "@/components/ui/backoffice"
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { MailComposer } from "@/components/crm/MailComposer";
 import { createInvoiceFromWoAction, dunningAction } from "./actions";
+import { mailMode } from "@/lib/integrations/mail";
 
 export const metadata = { title: "Finance" };
 
@@ -18,6 +19,7 @@ export default async function FinanceHome({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
   const ctx = await requireUser();
   const db = await createClient();
+  const mailbox = await mailMode(db);
   if (can(ctx, "finance", "update")) await db.rpc("refresh_overdue_invoices");
   const today = todayIso(sectorConfig.company.timezone);
   const month = today.slice(0, 7);
@@ -96,7 +98,7 @@ export default async function FinanceHome({ searchParams }: { searchParams: Prom
                   </p>
                 </div>
                 {write && mail && level && (
-                  <MailComposer
+                  <MailComposer simulated={mailbox.simulated}
                     label={`Relance ${level}`}
                     title={`Relance niveau ${level} — ${i.number}`}
                     to={contact?.email ?? null}
