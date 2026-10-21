@@ -407,14 +407,14 @@ isOneToOne: false
                   ]
                 },"dunning_steps": {
                   Row: {
-                    "channel": string,"created_at": string,"created_by": string | null,"id": string,"invoice_id": string,"level": number,"org_id": string,"sent_at": string,"updated_at": string
+                    "channel": string,"created_at": string,"created_by": string | null,"id": string,"invoice_id": string,"level": number,"note": string | null,"org_id": string,"sent_at": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "channel"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"invoice_id": string,"level": number,"org_id": string,"sent_at"?: string,"updated_at"?: string
+                    "channel"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"invoice_id": string,"level": number,"note"?: string | null,"org_id": string,"sent_at"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "channel"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"invoice_id"?: string,"level"?: number,"org_id"?: string,"sent_at"?: string,"updated_at"?: string
+                    "channel"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"invoice_id"?: string,"level"?: number,"note"?: string | null,"org_id"?: string,"sent_at"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -579,17 +579,23 @@ isOneToOne: false
                   ]
                 },"invoice_lines": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"description": string,"id": string,"invoice_id": string,"org_id": string,"position": number,"quantity": number,"unit_price": number,"updated_at": string,"vat_rate": number
+                    "catalog_item_id": string | null,"created_at": string,"created_by": string | null,"description": string,"discount": number,"id": string,"invoice_id": string,"org_id": string,"position": number,"quantity": number,"unit_price": number,"updated_at": string,"vat_rate": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"description": string,"id"?: string,"invoice_id": string,"org_id": string,"position"?: number,"quantity": number,"unit_price": number,"updated_at"?: string,"vat_rate": number
+                    "catalog_item_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"description": string,"discount"?: number,"id"?: string,"invoice_id": string,"org_id": string,"position"?: number,"quantity": number,"unit_price": number,"updated_at"?: string,"vat_rate": number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"invoice_id"?: string,"org_id"?: string,"position"?: number,"quantity"?: number,"unit_price"?: number,"updated_at"?: string,"vat_rate"?: number
+                    "catalog_item_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string,"discount"?: number,"id"?: string,"invoice_id"?: string,"org_id"?: string,"position"?: number,"quantity"?: number,"unit_price"?: number,"updated_at"?: string,"vat_rate"?: number
                   }
                   Relationships: [
                     {
+      foreignKeyName: "invoice_lines_catalog_item_id_fkey"
+      columns: ["catalog_item_id"]
+isOneToOne: false
+      referencedRelation: "catalog_items"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "invoice_lines_invoice_id_fkey"
       columns: ["invoice_id"]
 isOneToOne: false
@@ -605,14 +611,14 @@ isOneToOne: false
                   ]
                 },"invoices": {
                   Row: {
-                    "client_id": string,"created_at": string,"created_by": string | null,"due_date": string,"id": string,"issue_date": string,"number": string,"org_id": string,"paid_amount": number,"quote_id": string | null,"status": string,"total_ht": number,"total_ttc": number,"total_vat": number,"updated_at": string,"work_order_id": string | null
+                    "client_id": string,"contact_id": string | null,"created_at": string,"created_by": string | null,"due_date": string,"id": string,"issue_date": string,"kind": string,"notes": string | null,"number": string,"org_id": string,"paid_amount": number,"quote_id": string | null,"sent_at": string | null,"status": string,"total_ht": number,"total_ttc": number,"total_vat": number,"updated_at": string,"work_order_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "client_id": string,"created_at"?: string,"created_by"?: string | null,"due_date": string,"id"?: string,"issue_date"?: string,"number": string,"org_id": string,"paid_amount"?: number,"quote_id"?: string | null,"status"?: string,"total_ht"?: number,"total_ttc"?: number,"total_vat"?: number,"updated_at"?: string,"work_order_id"?: string | null
+                    "client_id": string,"contact_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"due_date": string,"id"?: string,"issue_date"?: string,"kind"?: string,"notes"?: string | null,"number": string,"org_id": string,"paid_amount"?: number,"quote_id"?: string | null,"sent_at"?: string | null,"status"?: string,"total_ht"?: number,"total_ttc"?: number,"total_vat"?: number,"updated_at"?: string,"work_order_id"?: string | null
                   }
                   Update: {
-                    "client_id"?: string,"created_at"?: string,"created_by"?: string | null,"due_date"?: string,"id"?: string,"issue_date"?: string,"number"?: string,"org_id"?: string,"paid_amount"?: number,"quote_id"?: string | null,"status"?: string,"total_ht"?: number,"total_ttc"?: number,"total_vat"?: number,"updated_at"?: string,"work_order_id"?: string | null
+                    "client_id"?: string,"contact_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"due_date"?: string,"id"?: string,"issue_date"?: string,"kind"?: string,"notes"?: string | null,"number"?: string,"org_id"?: string,"paid_amount"?: number,"quote_id"?: string | null,"sent_at"?: string | null,"status"?: string,"total_ht"?: number,"total_ttc"?: number,"total_vat"?: number,"updated_at"?: string,"work_order_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -620,6 +626,12 @@ isOneToOne: false
       columns: ["client_id"]
 isOneToOne: false
       referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "invoices_contact_id_fkey"
+      columns: ["contact_id"]
+isOneToOne: false
+      referencedRelation: "contacts"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "invoices_org_id_fkey"
@@ -1483,6 +1495,9 @@ isOneToOne: false
                            },
 "next_document_number":
 { Args: { "p_prefix": string,"p_table": string }; Returns: string
+                           },
+"refresh_overdue_invoices":
+{ Args: Record<PropertyKey, never>; Returns: number
                            }
           }
           Enums: {

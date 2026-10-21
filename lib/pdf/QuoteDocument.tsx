@@ -24,6 +24,10 @@ const s = StyleSheet.create({
 });
 
 export interface QuotePdfData {
+  /** Type de document : devis (défaut), facture, facture d'acompte, avoir. */
+  docType?: "quote" | "invoice" | "deposit" | "credit_note";
+  due_date?: string | null;
+  paid_amount?: number;
   number: string;
   issue_date: string;
   valid_until: string | null;
@@ -45,8 +49,12 @@ const cols = [
   { key: "total", w: "16%", right: true },
 ] as const;
 
+const TITLES = { quote: "DEVIS", invoice: "FACTURE", deposit: "FACTURE D'ACOMPTE", credit_note: "AVOIR" } as const;
+
 export function QuoteDocument({ q }: { q: QuotePdfData }) {
   const c = sectorConfig.company;
+  const type = q.docType ?? "quote";
+  const isQuote = type === "quote";
   return (
     <Document title={`${q.number} — ${c.name}`} author={c.name}>
       <Page size="A4" style={s.page}>
@@ -60,10 +68,14 @@ export function QuoteDocument({ q }: { q: QuotePdfData }) {
             </View>
           </View>
           <View style={{ alignItems: "flex-end" }}>
-            <Text style={s.h1}>DEVIS</Text>
+            <Text style={s.h1}>{TITLES[type]}</Text>
             <Text>N° {q.number}</Text>
-            <Text style={s.muted}>Émis le {date(q.issue_date)}</Text>
-            <Text style={s.muted}>Valable jusqu&apos;au {date(q.valid_until)}</Text>
+            <Text style={s.muted}>{isQuote ? "Émis le" : "Date"} {date(q.issue_date)}</Text>
+            {isQuote ? (
+              <Text style={s.muted}>Valable jusqu&apos;au {date(q.valid_until)}</Text>
+            ) : (
+              type !== "credit_note" && <Text style={s.muted}>Échéance {date(q.due_date ?? null)}</Text>
+            )}
           </View>
         </View>
 
@@ -119,6 +131,19 @@ export function QuoteDocument({ q }: { q: QuotePdfData }) {
           </View>
         </View>
 
+        {!isQuote && (
+          <View style={[s.box, { marginTop: 24 }]}>
+            {type !== "credit_note" && (q.paid_amount ?? 0) > 0 && (
+              <Text style={{ marginBottom: 4 }}>Déjà réglé : {money(q.paid_amount!)} · Reste dû : {money(q.total_ttc - (q.paid_amount ?? 0))}</Text>
+            )}
+            <Text style={{ fontFamily: "Helvetica-Bold", marginBottom: 4 }}>Conditions de règlement</Text>
+            <Text style={s.muted}>
+              Paiement par virement avant le {date(q.due_date ?? null)}{c.legal.iban ? ` — IBAN ${c.legal.iban}` : ""}, référence {q.number}. Pas d&apos;escompte pour paiement anticipé.
+              En cas de retard : pénalités au taux d&apos;intérêt de la BCE majoré de 10 points et indemnité forfaitaire de 40 € pour frais de recouvrement (art. L441-10 du Code de commerce).
+            </Text>
+          </View>
+        )}
+        {isQuote && (
         <View style={[s.box, { marginTop: 24 }]}>
           <Text style={{ fontFamily: "Helvetica-Bold", marginBottom: 4 }}>Bon pour accord</Text>
           <Text style={s.muted}>
@@ -127,6 +152,7 @@ export function QuoteDocument({ q }: { q: QuotePdfData }) {
           </Text>
           <View style={{ height: 50 }} />
         </View>
+        )}
 
         <Text style={s.footer} fixed>
           {c.name} · {c.legal.registration} · TVA {c.legal.vatNumber} — Document de démonstration, données fictives.

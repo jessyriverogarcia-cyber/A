@@ -28,7 +28,8 @@ export interface CatalogItem {
 
 const money = new Intl.NumberFormat(sectorConfig.company.locale, { style: "currency", currency: sectorConfig.company.currency });
 const pct = new Intl.NumberFormat(sectorConfig.company.locale, { style: "percent", maximumFractionDigits: 1 });
-const cell = "w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-right tabular-nums outline-none hover:border-border focus:border-accent focus:bg-surface";
+const cellBase = "w-full rounded-md border border-transparent bg-transparent px-2 py-1 tabular-nums outline-none hover:border-border focus:border-accent focus:bg-surface";
+const cell = `${cellBase} text-right`;
 
 export function QuoteEditor({ quoteId, initialLines, initialNotes, catalog, editable }: { quoteId: string; initialLines: EditorLine[]; initialNotes: string; catalog: CatalogItem[]; editable: boolean }) {
   const router = useRouter();
@@ -90,7 +91,7 @@ export function QuoteEditor({ quoteId, initialLines, initialNotes, catalog, edit
             {lines.map((l, i) => (
               <tr key={i} data-testid="quote-line">
                 <td className="px-1 py-1">
-                  <input value={l.description} disabled={!editable} onChange={(e) => update(i, { description: e.target.value })} className={clsx(cell, "text-left")} />
+                  <input value={l.description} disabled={!editable} onChange={(e) => update(i, { description: e.target.value })} className={`${cellBase} text-left`} />
                 </td>
                 <td className="px-1"><input type="number" min={0} step="any" value={l.quantity} disabled={!editable} onChange={(e) => update(i, { quantity: Number(e.target.value) })} className={cell} data-testid="line-qty" /></td>
                 <td className="px-1"><input type="number" min={0} step="any" value={l.unit_price} disabled={!editable} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} className={cell} data-testid="line-price" /></td>

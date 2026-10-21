@@ -104,6 +104,7 @@ const input: SectorConfigInput = {
     invoicePrefix: "FAC",
     quoteValidityDays: 30,
     paymentTermsDays: 30, // délai légal par défaut en France (LME : 60 j max)
+    defaultHourlyRate: 110,
   },
 
   technologies: [

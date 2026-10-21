@@ -13,7 +13,7 @@ function navItems(): NavItem[] {
   const moduleRoutes: Record<string, NavItem> = {
     crm: { key: "crm", href: "/crm", module: "crm" },
     ops: { key: "ops", href: "/ops", module: "ops" },
-    finance: { key: "finance", href: "/finance", module: "finance", phase: 3 },
+    finance: { key: "finance", href: "/finance", module: "finance" },
     resources: { key: "resources", href: "/resources", module: "resources", phase: 3 },
     hr: { key: "hr", href: "/hr", module: "hr", phase: 3 },
     comms: { key: "comms", href: "/comms", module: "comms", phase: 3 },

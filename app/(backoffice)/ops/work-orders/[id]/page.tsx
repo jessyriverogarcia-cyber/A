@@ -23,6 +23,8 @@ import {
   taskStatusAction,
   traceabilityAction,
 } from "../../actions";
+import { createInvoiceFromWoAction } from "@/app/(backoffice)/finance/actions";
+import { INVOICE_KIND, INVOICE_STATUS } from "@/components/finance/status";
 
 export const metadata = { title: "Ordre de fabrication" };
 
@@ -46,6 +48,10 @@ export default async function WorkOrderPage({ params, searchParams }: { params: 
     db.from("employees").select("id, first_name, last_name").eq("active", true).order("first_name"),
     db.from("asset_bookings").select("id, starts_at, ends_at, assets(code)").eq("work_order_id", id).order("starts_at"),
   ]);
+  // Factures du dossier (vides si le rôle n'a pas accès à la Finance)
+  const { data: invoices } = await db.from("invoices").select("id, number, kind, status, total_ttc").eq("work_order_id", id).order("number");
+  const canInvoice = can(ctx, "finance", "create");
+  const hasFinal = (invoices ?? []).some((i) => i.kind === "invoice" && i.status !== "cancelled");
 
   const write = can(ctx, "ops", "update");
   const approve = can(ctx, "ops", "approve");
@@ -273,6 +279,40 @@ export default async function WorkOrderPage({ params, searchParams }: { params: 
               <div className="flex justify-between"><dt className="text-muted">Échéance</dt><dd className={late ? "font-medium text-danger" : ""}>{wo.due_date ? formatDate(wo.due_date) : "—"}</dd></div>
             </dl>
           </Card>
+
+          {(can(ctx, "finance") || canInvoice) && (
+            <Card>
+              <CardTitle>Facturation</CardTitle>
+              <ul className="space-y-1 text-sm">
+                {(invoices ?? []).map((i) => (
+                  <li key={i.id} className="flex justify-between">
+                    <Link href={`/finance/invoices/${i.id}`} className="hover:text-accent">{i.number} <span className="text-muted">· {INVOICE_KIND[i.kind]}</span></Link>
+                    <Badge tone={INVOICE_STATUS[i.status]?.tone ?? "neutral"}>{INVOICE_STATUS[i.status]?.label ?? i.status}</Badge>
+                  </li>
+                ))}
+                {!invoices?.length && <li className="text-muted">Pas encore facturé.</li>}
+              </ul>
+              {canInvoice && !hasFinal && (
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
+                  <form action={createInvoiceFromWoAction}>
+                    <input type="hidden" name="wo_id" value={wo.id} />
+                    <input type="hidden" name="kind" value="final" />
+                    <input type="hidden" name="back" value={`/ops/work-orders/${wo.id}`} />
+                    <SubmitButton testId="wo-invoice">Facturer le dossier</SubmitButton>
+                  </form>
+                  {quote && !done && (
+                    <form action={createInvoiceFromWoAction} className="flex items-center gap-1">
+                      <input type="hidden" name="wo_id" value={wo.id} />
+                      <input type="hidden" name="kind" value="deposit" />
+                      <input type="hidden" name="back" value={`/ops/work-orders/${wo.id}`} />
+                      <div className="w-16"><Input type="number" name="ratio" defaultValue={30} min={5} max={90} aria-label="Pourcentage d'acompte" /></div>
+                      <SubmitButton variant="secondary" testId="wo-deposit">% Acompte</SubmitButton>
+                    </form>
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
 
           <Card>
             <CardTitle>Machine</CardTitle>

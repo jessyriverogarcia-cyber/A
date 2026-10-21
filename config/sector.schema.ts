@@ -155,6 +155,8 @@ export const SectorConfigSchema = z.object({
     invoicePrefix: z.string().min(1),
     quoteValidityDays: z.number().int().positive(),
     paymentTermsDays: z.number().int().positive(),
+    /** Taux horaire HT pour facturer les heures d'un dossier sans devis. */
+    defaultHourlyRate: z.number().positive(),
   }),
   technologies: z.array(TechnologySchema).min(1),
   productFamilies: z.array(ProductFamilySchema).min(1),

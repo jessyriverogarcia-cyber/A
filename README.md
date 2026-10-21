@@ -71,6 +71,19 @@ personnes et appareils viennent de la base et de la fiche secteur.
 - Toutes les actions écrivent un `activity_event` : la Map s'anime en direct. Le scénario de démo utilise le même
   service (`lib/services/ops.ts`).
 
+## Back-office — Finance (`/finance`)
+
+- **À faire aujourd'hui** : retards à relancer (niveau proposé selon le retard : rappel, relance ferme, mise en
+  demeure), dossiers livrés à facturer, brouillons, échéances sous 7 jours ; facturé du mois, reste à encaisser,
+  retards, délai moyen de paiement.
+- **Zéro double saisie** : « Facturer le dossier » (fiche OF ou tuile) reprend les lignes du devis et déduit les
+  acomptes déjà facturés ; « % Acompte » facture un pourcentage du devis ; un dossier sans devis facture ses heures.
+- **Facture** : brouillon modifiable, puis émise et figée (correction par **avoir**), envoi par e-mail pré-rempli
+  (simulé), PDF avec mentions légales (pénalités, indemnité de 40 €, IBAN), paiements partiels ou complets — le
+  statut et le montant payé sont recalculés en base (trigger), passage automatique « en retard ».
+- **Trésorerie** : prévisionnel 6 mois (prévisions + factures à encaisser), graphique entrées / sorties, cumul.
+- Rôles : Comptabilité et Direction écrivent ; Commercial lit ; Opérateur n'a pas accès.
+
 La **page technique** (`/settings/tech`) montre la session, la matrice de droits du rôle,
 le nombre de lignes visibles par table (RLS) et le flux `activity_events` en temps réel.
 
@@ -95,7 +108,8 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 - [ ] Phase 3 — back-office module par module
   - [x] Commercial : à faire aujourd'hui, pipeline kanban, clients 360°, devis (éditeur, marge, PDF, envoi et relance pré-remplis, acceptation → OF)
   - [x] Production : à faire aujourd'hui, tableau des OF par étape, fiche dossier (étapes, CQ, heures, tâches, checklist, traçabilité), planning machines
-  - [ ] Finance · Ressources · RH · Communication · Pilotage
+  - [x] Finance : à faire aujourd'hui, factures (depuis le dossier, acompte, avoir), envoi, paiements, relances graduées, PDF, trésorerie
+  - [ ] Ressources · RH · Communication · Pilotage
 - [ ] Phase 4 — intégrations, IA, finitions, déploiement
 
 **Mode simulé :** aucune intégration (Microsoft 365, Google Workspace, SSO, API Claude) n'est branchée.

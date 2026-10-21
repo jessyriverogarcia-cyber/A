@@ -61,3 +61,57 @@ export function needsFollowUp(q: { status: string; sent_at: string | null; last_
 
 export const daysBetween = (from: string | Date, to: Date = new Date()) =>
   Math.floor((to.getTime() - new Date(from).getTime()) / 86_400_000);
+
+export interface InvoiceMailInput {
+  companyName: string;
+  senderName: string;
+  contactFirstName?: string | null;
+  invoiceNumber: string;
+  totalTtc: string;
+  remaining: string;
+  dueDate: string;
+  iban?: string;
+}
+
+export function invoiceEmail(i: InvoiceMailInput) {
+  return {
+    subject: `Facture ${i.invoiceNumber}`,
+    body: [
+      hello(i.contactFirstName),
+      "",
+      `Veuillez trouver ci-joint notre facture ${i.invoiceNumber} d'un montant de ${i.totalTtc} TTC, payable au plus tard le ${i.dueDate}.`,
+      i.iban ? `Règlement par virement : IBAN ${i.iban}, en rappelant la référence ${i.invoiceNumber}.` : "",
+      "",
+      "Merci pour votre confiance.",
+      "",
+      "Bien cordialement,",
+      i.senderName,
+      i.companyName,
+    ]
+      .filter((l, idx, arr) => !(l === "" && arr[idx - 1] === ""))
+      .join("\n"),
+  };
+}
+
+/** Relance de paiement : ton adapté au niveau (1 courtois, 2 ferme, 3 mise en demeure). */
+export function dunningEmail(i: InvoiceMailInput & { level: 1 | 2 | 3; daysLate: number }) {
+  const subjects = { 1: `Rappel — facture ${i.invoiceNumber}`, 2: `Relance — facture ${i.invoiceNumber} impayée`, 3: `Mise en demeure — facture ${i.invoiceNumber}` };
+  const bodies = {
+    1: [
+      `Sauf erreur de notre part, la facture ${i.invoiceNumber} arrivée à échéance le ${i.dueDate} reste à régler (${i.remaining}).`,
+      "Il s'agit peut-être d'un simple oubli : pourriez-vous nous indiquer la date de règlement prévue ?",
+    ],
+    2: [
+      `Malgré notre précédent rappel, la facture ${i.invoiceNumber} (échéance ${i.dueDate}) reste impayée depuis ${i.daysLate} jours. Montant restant dû : ${i.remaining}.`,
+      "Nous vous remercions de procéder au règlement sous 8 jours.",
+    ],
+    3: [
+      `Malgré nos relances, la facture ${i.invoiceNumber} d'un montant restant dû de ${i.remaining}, échue le ${i.dueDate}, n'a pas été réglée.`,
+      "Par la présente, nous vous mettons en demeure de procéder au paiement sous 8 jours. À défaut, des pénalités de retard ainsi que l'indemnité forfaitaire de 40 € pour frais de recouvrement seront appliquées, et nous nous réservons le droit d'engager une procédure de recouvrement.",
+    ],
+  };
+  return {
+    subject: subjects[i.level],
+    body: [hello(i.contactFirstName), "", ...bodies[i.level], i.iban ? `IBAN : ${i.iban}` : "", "", "Bien cordialement,", i.senderName, i.companyName].join("\n"),
+  };
+}
