@@ -24,9 +24,10 @@ export default async function FinanceHome({ searchParams }: { searchParams: Prom
   const today = todayIso(sectorConfig.company.timezone);
   const month = today.slice(0, 7);
 
-  const [{ data: invoices }, { data: wos }] = await Promise.all([
+  const [{ data: invoices }, { data: wos }, { data: pendingExpenses }] = await Promise.all([
     db.from("invoices").select("id, number, kind, status, issue_date, due_date, total_ht, total_ttc, paid_amount, clients(name), contacts(first_name, email), dunning_steps(level, sent_at), payments(paid_on)").order("due_date"),
     db.from("work_orders").select("id, number, title, status, stage, clients(name), quotes(total_ht), invoices(kind, status)").order("number"),
+    db.from("expenses").select("id, label, amount, spent_on, employees:employees!expenses_employee_id_fkey(first_name, last_name)").eq("status", "pending").order("spent_on"),
   ]);
   const list = (invoices ?? []).map((i) => ({ ...i, eff: effectiveStatus({ status: i.status, due_date: i.due_date, paid_amount: Number(i.paid_amount), total_ttc: Number(i.total_ttc) }, today) }));
   const overdue = list.filter((i) => i.eff === "overdue");
@@ -162,6 +163,20 @@ export default async function FinanceHome({ searchParams }: { searchParams: Prom
             </li>
           )),
           "info",
+        )}
+        {tile(
+          "Notes de frais à valider",
+          (pendingExpenses ?? []).length,
+          (pendingExpenses ?? []).map((e) => {
+            const x = e.employees as unknown as { first_name: string; last_name: string } | null;
+            return (
+              <li key={e.id} className="flex items-center justify-between px-4 py-3 text-sm">
+                <Link href="/finance/expenses" className="min-w-0 truncate hover:text-accent">{x?.first_name} {x?.last_name} · <span className="text-muted">{e.label}</span></Link>
+                <span className="shrink-0 text-xs tabular-nums">{formatMoney(e.amount)}</span>
+              </li>
+            );
+          }),
+          "warn",
         )}
       </div>
     </>

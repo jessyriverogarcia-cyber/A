@@ -91,13 +91,15 @@ async function wipe() {
   }
   const { data: org } = await db.from("orgs").select("id").eq("slug", "strato-fab").maybeSingle();
   if (org) {
-    // Le stockage ne suit pas la cascade SQL : on vide le dossier de l'organisation.
+    // Le stockage ne suit pas la cascade SQL : on vide le dossier de l'organisation, sous-dossiers compris.
     const bucket = db.storage.from("documents");
-    const { data: folders } = await bucket.list(org.id, { limit: 1000 });
-    for (const f of folders ?? []) {
-      const { data: files } = await bucket.list(`${org.id}/${f.name}`, { limit: 1000 });
-      if (files?.length) await bucket.remove(files.map((x) => `${org.id}/${f.name}/${x.name}`));
-    }
+    const purge = async (prefix: string): Promise<void> => {
+      const { data: entries } = await bucket.list(prefix, { limit: 1000 });
+      const files = (entries ?? []).filter((e) => e.id).map((e) => `${prefix}/${e.name}`);
+      if (files.length) await bucket.remove(files);
+      for (const d of (entries ?? []).filter((e) => !e.id)) await purge(`${prefix}/${d.name}`);
+    };
+    await purge(org.id);
   }
   await db.from("orgs").delete().eq("slug", "strato-fab");
   // Après la suppression : la cascade déclenche elle-même des lignes d'audit (pas de clé étrangère).
@@ -865,10 +867,25 @@ async function main() {
     { org_id, employee_id: emp("Bastien").id, title: "Formation sécurité site", due_on: day(-8), done: true },
     { org_id, employee_id: emp("Bastien").id, title: "Accès au logiciel de gestion", due_on: day(2), done: false },
   ]);
+  // Notes de frais : conformes, hors plafond, kilométriques, et une dépense refacturable sur un dossier.
+  const expensePolicy = cfg.expenses;
+  const ex = (category: string, ttc: number) => {
+    const cat = expensePolicy.categories.find((x) => x.id === category)!;
+    return Math.round((ttc - ttc / (1 + cat.vatRate)) * 100) / 100;
+  };
+  const heliance = wos!.find((w) => (w.title as string).startsWith("Conduits de climatisation"))!;
+  const receiptPath = `${org_id}/expense/${emp("Karim").id}/seed-billet-train.pdf`;
+  const receipt = tinyPdf("Billet de train Bordeaux - Toulouse");
+  const { error: rErr } = await db.storage.from("documents").upload(receiptPath, receipt, { contentType: "application/pdf", upsert: true });
+  if (rErr) throw new Error(`storage : ${rErr.message}`);
   await insert("expenses", [
-    { org_id, employee_id: emp("Karim").id, label: "Déplacement Toulouse — Héliance Aéro", amount: 186.4, spent_on: day(-6), category: "Déplacement", status: "pending" },
-    { org_id, employee_id: emp("Mathis").id, label: "Hôtel Arcachon — essais en vol", amount: 142, spent_on: day(-1), category: "Hébergement", status: "pending" },
-    { org_id, employee_id: emp("Pauline").id, label: "Repas client Ortho3D", amount: 74.5, spent_on: day(-9), category: "Repas", status: "approved", approver_id: emp("Marc").id },
+    { org_id, employee_id: emp("Karim").id, label: "Train Bordeaux – Toulouse — Héliance Aéro", amount: 98.6, vat_amount: ex("transport", 98.6), spent_on: day(-6), category: "transport", status: "pending", receipt_path: receiptPath, receipt_name: "billet-train.pdf", work_order_id: heliance.id, billable: true },
+    { org_id, employee_id: emp("Mathis").id, label: "Hôtel Arcachon — essais en vol", amount: 142, vat_amount: ex("lodging", 142), spent_on: day(-1), category: "lodging", status: "pending", comment: "Essais décalés au lendemain" },
+    { org_id, employee_id: emp("Antoine").id, label: "Dîner équipe essais soufflerie", amount: 46.5, vat_amount: ex("meal", 46.5), spent_on: day(-3), category: "meal", status: "pending" },
+    { org_id, employee_id: emp("Tom").id, label: "Aller-retour fournisseur poudre (Pessac)", amount: Math.round(84 * expensePolicy.mileageRatePerKm * 100) / 100, km: 84, vat_amount: 0, spent_on: day(-2), category: "mileage", status: "pending" },
+    { org_id, employee_id: emp("Pauline").id, label: "Repas client Ortho3D", amount: 74.5, vat_amount: ex("client_meal", 74.5), spent_on: day(-9), category: "client_meal", status: "approved", approver_id: emp("Marc").id, decided_at: iso(at(-7, 10)) },
+    { org_id, employee_id: emp("Karim").id, label: "Taxi aéroport — visite Héliance Aéro", amount: 38, vat_amount: ex("transport", 38), spent_on: day(-12), category: "transport", status: "approved", approver_id: emp("Marc").id, decided_at: iso(at(-10, 10)), work_order_id: heliance.id, billable: true },
+    { org_id, employee_id: emp("Julien").id, label: "Péage A63 — livraison urgente", amount: 12.4, vat_amount: ex("parking", 12.4), spent_on: day(-40), category: "parking", status: "reimbursed", approver_id: emp("Marc").id, decided_at: iso(at(-38, 10)), reimbursed_at: iso(at(-31, 10)) },
   ]);
 
   // --- flux d'activité (historique récent) ------------------------------

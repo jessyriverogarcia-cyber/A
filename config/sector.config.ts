@@ -172,6 +172,25 @@ const input: SectorConfigInput = {
   payroll: { monthsMode: "per_contract", collectiveAgreement: "Métallurgie (IDCC 3248)" },
 
   hud: { layout: "hybrid" },
+
+  // Politique de frais (fictive) : plafonds internes, TVA courante, barème kilométrique.
+  expenses: {
+    categories: [
+      { id: "transport", label: "Train, avion, taxi", vatRate: 0.1, vatRecoverable: true },
+      { id: "mileage", label: "Indemnités kilométriques", vatRate: 0, vatRecoverable: false, mileage: true },
+      { id: "meal", label: "Repas", vatRate: 0.1, vatRecoverable: true, ceiling: 30 },
+      { id: "client_meal", label: "Repas client", vatRate: 0.1, vatRecoverable: true, ceiling: 80 },
+      { id: "lodging", label: "Hébergement", vatRate: 0.1, vatRecoverable: false, ceiling: 160 },
+      { id: "supplies", label: "Fournitures et petit matériel", vatRate: 0.2, vatRecoverable: true },
+      { id: "parking", label: "Parking et péages", vatRate: 0.2, vatRecoverable: true },
+      { id: "other", label: "Autre", vatRate: 0.2, vatRecoverable: true },
+    ],
+    mileageRatePerKm: 0.636,
+    mileageRateLabel: "barème fiscal, véhicule 5 CV, jusqu'à 5 000 km par an",
+    receiptRequiredAbove: 0,
+    maxAgeDays: 90,
+    reimbursement: "payroll",
+  },
 };
 
 export const sectorConfig = validateSectorConfig(input);

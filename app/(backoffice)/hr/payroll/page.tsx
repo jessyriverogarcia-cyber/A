@@ -37,7 +37,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
           </>
         }
       />
-      <Table head={["Salarié", "Contrat", "Base brute / mois", "Heures badgées", "Heures contrat", "Heures sup.", "CP", "RTT", "Maladie", "Autres"]}>
+      <Table head={["Salarié", "Contrat", "Base brute / mois", "Heures badgées", "Heures contrat", "Heures sup.", "CP", "RTT", "Maladie", "Autres", "Frais à rembourser"]}>
         {rows.map((r) => (
           <tr key={r.id}>
             <Td><p className="font-medium">{r.name}</p><p className="text-xs text-muted">{r.job}</p></Td>
@@ -50,6 +50,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
             <Td className="text-right tabular-nums">{r.rtt || "—"}</Td>
             <Td className="text-right tabular-nums">{r.sick || "—"}</Td>
             <Td className="text-right tabular-nums">{r.other || "—"}</Td>
+            <Td className="text-right tabular-nums">{r.expenses ? formatMoney(r.expenses) : "—"}</Td>
           </tr>
         ))}
       </Table>

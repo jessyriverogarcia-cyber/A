@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { businessDays } from "@/lib/domain/hr";
 import type { Database } from "@/lib/supabase/database.types";
 import { badgesByEmployee, hoursPerDay } from "./hr";
+import { toReimburse } from "@/lib/domain/expenses";
+import { sectorConfig } from "@/config/sector.config";
 
 /**
  * Variables de paie du mois, sans ressaisie : heures depuis la badgeuse, absences depuis les
@@ -12,12 +14,15 @@ export async function payrollVariables(db: SupabaseClient<Database>, month: stri
   const first = `${month}-01`;
   const lastDate = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0));
   const last = lastDate.toISOString().slice(0, 10);
-  const [{ data: emps }, { data: salaries }, { data: leaves }, badges] = await Promise.all([
+  const [{ data: emps }, { data: salaries }, { data: leaves }, badges, { data: expenses }] = await Promise.all([
     db.from("employees").select("id, first_name, last_name, job_title, contract_type, weekly_hours, work_rate").eq("active", true).order("last_name"),
     db.from("employee_salaries").select("employee_id, gross_annual, months_count, bonus, effective_from").lte("effective_from", last).order("effective_from"),
     db.from("leave_requests").select("employee_id, kind, starts_on, ends_on").eq("status", "approved").lte("starts_on", last).gte("ends_on", first),
     badgesByEmployee(db, first, last),
+    // Frais validés remboursés par la paie (sans ressaisie depuis les notes de frais)
+    sectorConfig.expenses.reimbursement === "payroll" ? db.from("expenses").select("employee_id, amount, status").eq("status", "approved") : Promise.resolve({ data: [] }),
   ]);
+  const owed = toReimburse((expenses ?? []).map((x) => ({ ...x, amount: Number(x.amount) })));
   const workable = businessDays(first, last);
   return (emps ?? []).map((e) => {
     const sal = (salaries ?? []).filter((s) => s.employee_id === e.id).at(-1);
@@ -43,6 +48,7 @@ export async function payrollVariables(db: SupabaseClient<Database>, month: stri
       rtt: absences.rtt ?? 0,
       sick: absences.sick ?? 0,
       other: (absences.unpaid ?? 0) + (absences.training ?? 0) + (absences.other ?? 0),
+      expenses: owed.get(e.id) ?? 0,
     };
   }).map((r) => ({ ...r, workable }));
 }

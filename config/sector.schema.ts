@@ -180,6 +180,32 @@ export const SectorConfigSchema = z.object({
   hud: z.object({
     layout: z.enum(["A", "B", "hybrid"]),
   }),
+  expenses: z.object({
+    categories: z
+      .array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          /** Taux de TVA habituel (0 si aucune TVA, ex. péage étranger, indemnités kilométriques). */
+          vatRate: z.number().min(0).max(0.3),
+          /** TVA déductible pour l'entreprise (non pour l'hébergement des salariés, par exemple). */
+          vatRecoverable: z.boolean(),
+          /** Plafond de la politique de frais, par dépense (TTC). */
+          ceiling: z.number().positive().optional(),
+          /** Calcul au kilomètre plutôt qu'un montant saisi. */
+          mileage: z.boolean().default(false),
+        }),
+      )
+      .min(1),
+    /** Barème kilométrique appliqué (€/km). */
+    mileageRatePerKm: z.number().positive(),
+    mileageRateLabel: z.string(),
+    /** Justificatif obligatoire au-delà de ce montant TTC (0 : toujours). */
+    receiptRequiredAbove: z.number().min(0),
+    /** Délai maximal de remise d'une note (jours). */
+    maxAgeDays: z.number().int().positive(),
+    reimbursement: z.enum(["payroll", "transfer"]),
+  }),
 });
 
 export type SectorConfig = z.infer<typeof SectorConfigSchema>;

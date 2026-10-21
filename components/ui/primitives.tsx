@@ -44,7 +44,7 @@ export function Badge({ tone = "neutral", className, ...props }: HTMLAttributes<
   return (
     <span
       className={clsx(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
         tone === "neutral" && "bg-surface-2 text-muted",
         tone === "ok" && "bg-ok/15 text-ok",
         tone === "warn" && "bg-warn/15 text-warn",

@@ -22,8 +22,8 @@ export async function GET(req: Request) {
     const month = url.searchParams.get("month") ?? today.slice(0, 7);
     const rows = await payrollVariables(db, month);
     const body = csv([
-      ["Salarié", "Poste", "Contrat", "Base brute mensuelle", "Nb mois", "Heures badgées", "Heures contrat", "Heures sup.", "CP (j)", "RTT (j)", "Maladie (j)", "Autres absences (j)"],
-      ...rows.map((r) => [r.name, r.job, r.contract, r.baseMonthly, r.months, r.hours, r.contractMonthly, r.overtime, r.paidLeave, r.rtt, r.sick, r.other]),
+      ["Salarié", "Poste", "Contrat", "Base brute mensuelle", "Nb mois", "Heures badgées", "Heures contrat", "Heures sup.", "CP (j)", "RTT (j)", "Maladie (j)", "Autres absences (j)", "Frais à rembourser (€)"],
+      ...rows.map((r) => [r.name, r.job, r.contract, r.baseMonthly, r.months, r.hours, r.contractMonthly, r.overtime, r.paidLeave, r.rtt, r.sick, r.other, r.expenses]),
     ]);
     return new Response(body, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="variables-paie-${month}.csv"` } });
   }

@@ -144,6 +144,17 @@ L'envoi d'e-mails est **simulé** (badge « envoi simulé ») : le message est r
   filtres, historique d'une fiche, export CSV. La RLS ne montre que les tables des modules lisibles par le rôle
   (la production ne voit pas l'historique des factures, les salaires restent réservés).
 
+## Notes de frais (`/me`, `/finance/expenses`)
+
+- Saisie par chacun dans « Mon espace » : montant TTC ou kilomètres (barème de la fiche secteur), justificatif
+  photo ou PDF (stockage privé : visible par l'auteur et la comptabilité seulement), dossier refacturable.
+- Contrôles de la politique de frais (plafonds par catégorie, justificatif, ancienneté) ; TVA calculée et
+  TVA récupérable isolée.
+- Comptabilité : validation ou refus en lot (les notes non conformes ne sont pas cochées d'office), salarié notifié,
+  remboursement marqué, export CSV.
+- Sans ressaisie : les montants validés arrivent dans les variables de paie ; les frais refacturables sont repris
+  au coût HT sur la facture finale du dossier.
+
 La **page technique** (`/settings/tech`) montre la session, la matrice de droits du rôle,
 le nombre de lignes visibles par table (RLS) et le flux `activity_events` en temps réel.
 
@@ -203,4 +214,4 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 
 **Ce qui reste simulé ou à faire** (détail dans `docs/RECETTE.md`) : sans clés, l'IA et l'envoi d'e-mails
 sont simulés et affichés comme tels ; la synchronisation des agendas, la réception des e-mails entrants,
-le SSO de connexion, Factur-X, les RTT et la saisie des notes de frais ne sont pas faits.
+le SSO de connexion, Factur-X et les RTT ne sont pas faits.

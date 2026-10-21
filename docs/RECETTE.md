@@ -32,7 +32,8 @@ La section 11 du prompt maître étant tronquée, cette liste reprend les exigen
 | Production | ✅ | — |
 | Finance | ✅ | Factur-X / facture électronique (obligation 2026-2027) ⛔ |
 | Ressources & stock | ✅ | CRUD fournisseurs ⛔, réception partielle ⛔ |
-| RH et Mon espace | ✅ | calcul des RTT ⛔, saisie des notes de frais ⛔ (table présente) |
+| RH et Mon espace | ✅ | calcul des RTT ⛔ |
+| Notes de frais | ✅ | saisie (montant ou km, justificatif photo/PDF), politique de frais (plafonds, TVA, ancienneté), validation en lot, paie, refacturation au client |
 | Communication | ✅ | réception des e-mails entrants depuis Outlook/Gmail ⛔ (seul l'envoi est branché) |
 | Pilotage, journal d'audit | ✅ | — |
 | Assistant IA | ✅ / 🟡 | boucle vérifiée contre une fausse API ; pas d'appel réel faute de clé dans cet environnement |

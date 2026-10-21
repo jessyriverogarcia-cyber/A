@@ -6,6 +6,7 @@ import { fromCents, toCents } from "@/lib/domain/money";
 import { depositLine, finalInvoiceLines, type SourceLine } from "@/lib/domain/invoice";
 import type { Database } from "@/lib/supabase/database.types";
 import { nextNumber } from "./crm";
+import { rebillLines } from "@/lib/domain/expenses";
 
 type Db = SupabaseClient<Database>;
 const cfg = sectorConfig;
@@ -48,6 +49,7 @@ export async function createInvoiceFromWorkOrder(db: Db, orgId: string, woId: st
   if (kind === "final" && existing.some((i) => i.kind === "invoice")) throw new Error("Ce dossier a déjà une facture finale.");
 
   let lines: SourceLine[];
+  let rebilled: string[] = [];
   if (kind === "deposit") {
     if (!quote) throw new Error("Pas de devis : impossible de calculer un acompte.");
     lines = [depositLine(quote.number, Number(quote.total_ht), ratio)];
@@ -62,7 +64,10 @@ export async function createInvoiceFromWorkOrder(db: Db, orgId: string, woId: st
       quoteLines.push({ description: `Main-d'œuvre — ${wo.number}`, quantity: total, unit_price: cfg.crm.defaultHourlyRate, discount: 0, catalog_item_id: null });
     }
     const deposits = existing.filter((i) => i.kind === "deposit").map((i) => ({ number: i.number, amount: Number(i.total_ht) }));
-    lines = finalInvoiceLines(quoteLines, deposits);
+    // Frais validés rattachés au dossier et refacturables : repris au coût HT, une seule fois.
+    const { data: exp } = await db.from("expenses").select("id, label, amount, category, spent_on").eq("work_order_id", woId).eq("billable", true).in("status", ["approved", "reimbursed"]).is("invoice_id", null);
+    rebilled = (exp ?? []).map((e) => e.id);
+    lines = finalInvoiceLines([...quoteLines, ...rebillLines(cfg.expenses, (exp ?? []).map((e) => ({ ...e, amount: Number(e.amount) })))], deposits);
   }
 
   const today = new Date();
@@ -86,5 +91,6 @@ export async function createInvoiceFromWorkOrder(db: Db, orgId: string, woId: st
     .single();
   if (error) throw new Error(error.message);
   await saveInvoiceLines(db, orgId, inv.id, lines);
+  if (rebilled.length) await db.from("expenses").update({ invoice_id: inv.id }).in("id", rebilled);
   return inv;
 }

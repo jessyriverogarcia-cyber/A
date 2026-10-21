@@ -11,6 +11,11 @@ import { EmptyState, Field, Flash, PageHeader, Select, Stat } from "@/components
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { LEAVE_KIND, LEAVE_STATUS } from "@/components/hr/status";
 import { cancelLeaveAction, requestLeaveAction, selfBadgeAction } from "../hr/actions";
+import { withdrawExpenseAction } from "../finance/expenses/actions";
+import { ExpenseForm } from "@/components/expenses/ExpenseForm";
+import { EXPENSE_STATUS } from "@/components/expenses/status";
+import { categoryOf, policyWarnings, WARNING_LABEL } from "@/lib/domain/expenses";
+import { formatMoney } from "@/lib/format";
 
 export const metadata = { title: "Mon espace" };
 
@@ -26,11 +31,15 @@ export default async function MePage({ searchParams }: { searchParams: Promise<R
   const monday = mondayOf(today);
   const week = daysBetweenIso(monday, new Date(new Date(`${monday}T00:00:00Z`).getTime() + 6 * 86_400_000).toISOString().slice(0, 10));
 
-  const [{ data: me }, { data: leaves }, badges] = await Promise.all([
+  const [{ data: me }, { data: leaves }, badges, { data: expenses }, { data: wos }] = await Promise.all([
     db.from("employees").select("first_name, last_name, job_title, start_date, work_rate, weekly_hours, leave_carryover").eq("id", ctx.employee_id).single(),
     db.from("leave_requests").select("id, kind, starts_on, ends_on, days, status, rejection_reason").eq("employee_id", ctx.employee_id).order("starts_on", { ascending: false }),
     badgesByEmployee(db, monday, today, ctx.employee_id),
+    db.from("expenses").select("id, label, category, amount, km, spent_on, status, receipt_path, rejection_reason, work_order_id, billable").eq("employee_id", ctx.employee_id).order("spent_on", { ascending: false }).limit(20),
+    db.from("work_orders").select("id, number, title").eq("status", "active").order("number"),
   ]);
+  const policy = sectorConfig.expenses;
+  const owed = (expenses ?? []).filter((e) => e.status === "approved").reduce((t, e) => t + Number(e.amount), 0);
   const mine = badges.get(ctx.employee_id) ?? [];
   const todayEvents = mine.filter((b) => b.day === today);
   const state = presenceFromBadges(todayEvents);
@@ -123,6 +132,53 @@ export default async function MePage({ searchParams }: { searchParams: Promise<R
               </li>
             ))}
             {!leaves?.length && <li className="py-2 text-muted">Aucune demande.</li>}
+          </ul>
+        </Card>
+
+        <Card>
+          <CardTitle>Nouvelle note de frais</CardTitle>
+          <ExpenseForm
+            categories={policy.categories.map((c) => ({ id: c.id, label: c.label, mileage: c.mileage, ceiling: c.ceiling }))}
+            rate={policy.mileageRatePerKm}
+            rateLabel={policy.mileageRateLabel}
+            today={today}
+            workOrders={(wos ?? []).map((w) => ({ id: w.id, label: `${w.number} — ${w.title}` }))}
+          />
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <div className="mb-3 flex items-baseline justify-between">
+            <CardTitle className="mb-0">Mes notes de frais</CardTitle>
+            {owed > 0 && <span className="text-sm">À rembourser : <span className="font-medium">{formatMoney(owed)}</span> {policy.reimbursement === "payroll" ? "sur la prochaine paie" : "par virement"}</span>}
+          </div>
+          <ul className="divide-y divide-border text-sm" data-testid="my-expenses">
+            {(expenses ?? []).map((e) => {
+              const warns = e.status === "pending" ? policyWarnings(policy, { category: e.category ?? "", amount: Number(e.amount), spent_on: e.spent_on, receipt: !!e.receipt_path }, today) : [];
+              return (
+                <li key={e.id} className="flex items-center justify-between gap-3 py-2">
+                  <span className="min-w-0">
+                    <span className="block truncate">{e.label}</span>
+                    <span className="text-xs text-muted">
+                      {categoryOf(policy, e.category)?.label ?? e.category} · {formatDate(e.spent_on)}{e.km ? ` · ${formatNumber(Number(e.km))} km` : ""}{e.billable ? " · refacturable" : ""}
+                      {e.receipt_path && <> · <a href={`/finance/expenses/${e.id}/receipt`} className="text-accent">justificatif</a></>}
+                      {warns.length > 0 && <span className="text-warn"> · {warns.map((w) => WARNING_LABEL[w]).join(", ")}</span>}
+                      {e.rejection_reason && <span className="text-danger"> · {e.rejection_reason}</span>}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="tabular-nums">{formatMoney(e.amount)}</span>
+                    <Badge tone={EXPENSE_STATUS[e.status].tone}>{EXPENSE_STATUS[e.status].label}</Badge>
+                    {e.status === "pending" && (
+                      <form action={withdrawExpenseAction}>
+                        <input type="hidden" name="expense_id" value={e.id} />
+                        <button className="text-xs text-muted hover:text-danger">Retirer</button>
+                      </form>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+            {!expenses?.length && <li className="py-2 text-muted">Aucune note de frais.</li>}
           </ul>
         </Card>
       </div>

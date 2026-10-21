@@ -555,14 +555,14 @@ isOneToOne: false
                   ]
                 },"expenses": {
                   Row: {
-                    "amount": number,"approver_id": string | null,"category": string | null,"created_at": string,"created_by": string | null,"employee_id": string,"id": string,"label": string,"org_id": string,"receipt_path": string | null,"spent_on": string,"status": string,"updated_at": string
+                    "amount": number,"approver_id": string | null,"billable": boolean,"category": string | null,"comment": string | null,"created_at": string,"created_by": string | null,"decided_at": string | null,"employee_id": string,"id": string,"invoice_id": string | null,"km": number | null,"label": string,"org_id": string,"receipt_name": string | null,"receipt_path": string | null,"reimbursed_at": string | null,"rejection_reason": string | null,"spent_on": string,"status": string,"updated_at": string,"vat_amount": number,"work_order_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"approver_id"?: string | null,"category"?: string | null,"created_at"?: string,"created_by"?: string | null,"employee_id": string,"id"?: string,"label": string,"org_id": string,"receipt_path"?: string | null,"spent_on": string,"status"?: string,"updated_at"?: string
+                    "amount": number,"approver_id"?: string | null,"billable"?: boolean,"category"?: string | null,"comment"?: string | null,"created_at"?: string,"created_by"?: string | null,"decided_at"?: string | null,"employee_id": string,"id"?: string,"invoice_id"?: string | null,"km"?: number | null,"label": string,"org_id": string,"receipt_name"?: string | null,"receipt_path"?: string | null,"reimbursed_at"?: string | null,"rejection_reason"?: string | null,"spent_on": string,"status"?: string,"updated_at"?: string,"vat_amount"?: number,"work_order_id"?: string | null
                   }
                   Update: {
-                    "amount"?: number,"approver_id"?: string | null,"category"?: string | null,"created_at"?: string,"created_by"?: string | null,"employee_id"?: string,"id"?: string,"label"?: string,"org_id"?: string,"receipt_path"?: string | null,"spent_on"?: string,"status"?: string,"updated_at"?: string
+                    "amount"?: number,"approver_id"?: string | null,"billable"?: boolean,"category"?: string | null,"comment"?: string | null,"created_at"?: string,"created_by"?: string | null,"decided_at"?: string | null,"employee_id"?: string,"id"?: string,"invoice_id"?: string | null,"km"?: number | null,"label"?: string,"org_id"?: string,"receipt_name"?: string | null,"receipt_path"?: string | null,"reimbursed_at"?: string | null,"rejection_reason"?: string | null,"spent_on"?: string,"status"?: string,"updated_at"?: string,"vat_amount"?: number,"work_order_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -590,10 +590,22 @@ isOneToOne: false
       referencedRelation: "presence_status"
       referencedColumns: ["employee_id"]
     },{
+      foreignKeyName: "expenses_invoice_id_fkey"
+      columns: ["invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoices"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "expenses_org_id_fkey"
       columns: ["org_id"]
 isOneToOne: false
       referencedRelation: "orgs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "expenses_work_order_id_fkey"
+      columns: ["work_order_id"]
+isOneToOne: false
+      referencedRelation: "work_orders"
       referencedColumns: ["id"]
     }
                   ]
@@ -1699,6 +1711,9 @@ isOneToOne: false
                            },
 "notify_employee":
 { Args: { "p_body": string,"p_employee": string,"p_link": string,"p_title": string }; Returns: number
+                           },
+"notify_expense_submitted":
+{ Args: { "p_expense": string }; Returns: number
                            },
 "org_members":
 { Args: Record<PropertyKey, never>; Returns: {

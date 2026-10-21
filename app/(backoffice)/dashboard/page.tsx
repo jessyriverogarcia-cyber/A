@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   const ctx = await requireUser();
   const db = await createClient();
   const today = todayIso(sectorConfig.company.timezone);
-  const [{ data: orders }, { data: machines }, { data: quotes }, { data: deals }, { data: invoices }, { data: stock }, { data: assets }, { data: leaves }, { data: threads }, { data: notes }, { data: tasks }] = await Promise.all([
+  const [{ data: orders }, { data: machines }, { data: quotes }, { data: deals }, { data: invoices }, { data: stock }, { data: assets }, { data: leaves }, { data: threads }, { data: notes }, { data: tasks }, { data: expenses }] = await Promise.all([
     can(ctx, "ops") ? db.from("work_orders").select("id, status, stage, due_date") : empty,
     db.from("assets").select("status").eq("kind", "machine"),
     can(ctx, "crm") ? db.from("quotes").select("status, sent_at, last_followup_at, followups") : empty,
@@ -32,6 +32,7 @@ export default async function DashboardPage() {
     can(ctx, "comms") ? db.from("thread_overview").select("last_direction, last_inbound_at, read_at, assigned_employee, drafts") : empty,
     db.from("notifications").select("id, title, body, link, created_at").eq("user_id", ctx.user_id).is("read_at", null).order("created_at", { ascending: false }).limit(5),
     ctx.employee_id ? db.from("tasks").select("id, title, due_on, status, work_order_id, work_orders(number)").eq("assignee_employee_id", ctx.employee_id).neq("status", "done").order("due_on") : empty,
+    can(ctx, "expenses", "approve") ? db.from("expenses").select("id").eq("status", "pending") : empty,
   ]);
 
   const kpiValues = computeKpis({ machines: machines ?? [], orders: orders ?? [], today });
@@ -48,8 +49,9 @@ export default async function DashboardPage() {
     { module: "resources", label: "Articles sous le minimum", count: (stock ?? []).filter((s) => stockLevel(Number(s.quantity), Number(s.min_quantity)) !== "ok").length, href: "/resources", tone: "warn" },
     { module: "resources", label: "Maintenances dues", count: (assets ?? []).filter((a) => maintenanceState(a.next_maintenance_on, today) === "overdue").length, href: "/resources", tone: "warn" },
     { module: "hr", label: "Congés à valider", count: (leaves ?? []).length, href: "/hr", tone: "warn" },
+    { module: "expenses", label: "Notes de frais à valider", count: (expenses ?? []).length, href: "/finance/expenses", tone: "warn" },
   ];
-  const visible = items.filter((i) => can(ctx, i.module as Parameters<typeof can>[1]) && (i.module !== "hr" || can(ctx, "hr", "approve")) && (i.module !== "resources" || can(ctx, "resources", "update")));
+  const visible = items.filter((i) => can(ctx, i.module as Parameters<typeof can>[1]) && (i.module !== "hr" || can(ctx, "hr", "approve")) && (i.module !== "resources" || can(ctx, "resources", "update")) && (i.module !== "expenses" || can(ctx, "expenses", "approve")));
   const hello = new Intl.DateTimeFormat(sectorConfig.company.locale, { weekday: "long", day: "numeric", month: "long", timeZone: sectorConfig.company.timezone }).format(new Date());
 
   return (
