@@ -14,7 +14,7 @@ function navItems(): NavItem[] {
     crm: { key: "crm", href: "/crm", module: "crm" },
     ops: { key: "ops", href: "/ops", module: "ops" },
     finance: { key: "finance", href: "/finance", module: "finance" },
-    resources: { key: "resources", href: "/resources", module: "resources", phase: 3 },
+    resources: { key: "resources", href: "/resources", module: "resources" },
     hr: { key: "hr", href: "/hr", module: "hr", phase: 3 },
     comms: { key: "comms", href: "/comms", module: "comms", phase: 3 },
     ai: { key: "ai", href: "/ai", module: "ai", phase: 4 },

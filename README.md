@@ -84,6 +84,20 @@ personnes et appareils viennent de la base et de la fiche secteur.
 - **Trésorerie** : prévisionnel 6 mois (prévisions + factures à encaisser), graphique entrées / sorties, cumul.
 - Rôles : Comptabilité et Direction écrivent ; Commercial lit ; Opérateur n'a pas accès.
 
+## Back-office — Ressources & stock (`/resources`)
+
+- **À faire aujourd'hui** : articles sous le minimum pas encore commandés (cochés, « Commander la sélection »),
+  commandes à réceptionner, maintenances dues ou en retard, pannes et bons à envoyer.
+- **Réassort en un clic** : quantité calculée (double du minimum ou délai fournisseur × consommation des 30 derniers
+  jours + 50 %, au conditionnement), un bon par fournisseur, pas de doublon si l'article est déjà en commande.
+- **Commandes fournisseurs** : brouillon ajustable, envoi par e-mail pré-rempli (simulé, demande de certificats
+  matière), réception en un clic via la fonction SQL `receive_purchase_order` (stock incrémenté, mouvements tracés,
+  rayonnages de la Map remplis en direct).
+- **Stock** : jauges, filtres, fiche article (consommation moyenne, jours de couverture, mouvements, sortie liée à un
+  dossier, inventaire) ; le passage sous le minimum déclenche l'alerte live.
+- **Équipements** : état (panne, remise en service, maintenance) synchronisé avec la Map, maintenance préventive
+  (périodicité par machine, « effectuée aujourd'hui », planification ajoutée au planning).
+
 La **page technique** (`/settings/tech`) montre la session, la matrice de droits du rôle,
 le nombre de lignes visibles par table (RLS) et le flux `activity_events` en temps réel.
 
@@ -109,7 +123,8 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
   - [x] Commercial : à faire aujourd'hui, pipeline kanban, clients 360°, devis (éditeur, marge, PDF, envoi et relance pré-remplis, acceptation → OF)
   - [x] Production : à faire aujourd'hui, tableau des OF par étape, fiche dossier (étapes, CQ, heures, tâches, checklist, traçabilité), planning machines
   - [x] Finance : à faire aujourd'hui, factures (depuis le dossier, acompte, avoir), envoi, paiements, relances graduées, PDF, trésorerie
-  - [ ] Ressources · RH · Communication · Pilotage
+  - [x] Ressources & stock : à faire aujourd'hui, stock et mouvements, réassort en un clic, commandes fournisseurs (envoi, réception), équipements et maintenance
+  - [ ] RH · Communication · Pilotage
 - [ ] Phase 4 — intégrations, IA, finitions, déploiement
 
 **Mode simulé :** aucune intégration (Microsoft 365, Google Workspace, SSO, API Claude) n'est branchée.

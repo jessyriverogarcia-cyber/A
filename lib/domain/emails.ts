@@ -115,3 +115,22 @@ export function dunningEmail(i: InvoiceMailInput & { level: 1 | 2 | 3; daysLate:
     body: [hello(i.contactFirstName), "", ...bodies[i.level], i.iban ? `IBAN : ${i.iban}` : "", "", "Bien cordialement,", i.senderName, i.companyName].join("\n"),
   };
 }
+
+export function purchaseOrderEmail(i: { companyName: string; senderName: string; supplierName: string; number: string; lines: { label: string; qty: number; unit: string }[]; expectedOn: string; deliveryAddress: string }) {
+  return {
+    subject: `Bon de commande ${i.number} — ${i.companyName}`,
+    body: [
+      "Bonjour,",
+      "",
+      `Merci de bien vouloir nous livrer la commande ${i.number} :`,
+      ...i.lines.map((l) => `  • ${l.label} : ${l.qty} ${l.unit}`),
+      "",
+      `Livraison souhaitée au plus tard le ${i.expectedOn}, à l'adresse : ${i.deliveryAddress}.`,
+      "Merci de nous confirmer le délai et de joindre les certificats matière (traçabilité).",
+      "",
+      "Bien cordialement,",
+      i.senderName,
+      i.companyName,
+    ].join("\n"),
+  };
+}

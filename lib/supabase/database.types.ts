@@ -89,14 +89,14 @@ isOneToOne: false
                   ]
                 },"assets": {
                   Row: {
-                    "code": string,"created_at": string,"created_by": string | null,"id": string,"kind": string,"last_maintenance_on": string | null,"name": string,"next_maintenance_on": string | null,"org_id": string,"site_id": string | null,"specs": NonNullable<Json>,"status": string,"technology": string | null,"updated_at": string,"zone_id": string | null
+                    "code": string,"created_at": string,"created_by": string | null,"id": string,"kind": string,"last_maintenance_on": string | null,"maintenance_interval_days": number,"name": string,"next_maintenance_on": string | null,"org_id": string,"site_id": string | null,"specs": NonNullable<Json>,"status": string,"technology": string | null,"updated_at": string,"zone_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind": string,"last_maintenance_on"?: string | null,"name": string,"next_maintenance_on"?: string | null,"org_id": string,"site_id"?: string | null,"specs"?: NonNullable<Json>,"status"?: string,"technology"?: string | null,"updated_at"?: string,"zone_id"?: string | null
+                    "code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind": string,"last_maintenance_on"?: string | null,"maintenance_interval_days"?: number,"name": string,"next_maintenance_on"?: string | null,"org_id": string,"site_id"?: string | null,"specs"?: NonNullable<Json>,"status"?: string,"technology"?: string | null,"updated_at"?: string,"zone_id"?: string | null
                   }
                   Update: {
-                    "code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"last_maintenance_on"?: string | null,"name"?: string,"next_maintenance_on"?: string | null,"org_id"?: string,"site_id"?: string | null,"specs"?: NonNullable<Json>,"status"?: string,"technology"?: string | null,"updated_at"?: string,"zone_id"?: string | null
+                    "code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"last_maintenance_on"?: string | null,"maintenance_interval_days"?: number,"name"?: string,"next_maintenance_on"?: string | null,"org_id"?: string,"site_id"?: string | null,"specs"?: NonNullable<Json>,"status"?: string,"technology"?: string | null,"updated_at"?: string,"zone_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -933,14 +933,14 @@ isOneToOne: false
                   ]
                 },"purchase_orders": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"expected_on": string | null,"id": string,"lines": NonNullable<Json>,"number": string,"org_id": string,"status": string,"supplier_id": string,"total": number,"updated_at": string
+                    "created_at": string,"created_by": string | null,"expected_on": string | null,"id": string,"lines": NonNullable<Json>,"notes": string | null,"number": string,"org_id": string,"received_at": string | null,"sent_at": string | null,"status": string,"supplier_id": string,"total": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"expected_on"?: string | null,"id"?: string,"lines"?: NonNullable<Json>,"number": string,"org_id": string,"status"?: string,"supplier_id": string,"total"?: number,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"expected_on"?: string | null,"id"?: string,"lines"?: NonNullable<Json>,"notes"?: string | null,"number": string,"org_id": string,"received_at"?: string | null,"sent_at"?: string | null,"status"?: string,"supplier_id": string,"total"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"expected_on"?: string | null,"id"?: string,"lines"?: NonNullable<Json>,"number"?: string,"org_id"?: string,"status"?: string,"supplier_id"?: string,"total"?: number,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"expected_on"?: string | null,"id"?: string,"lines"?: NonNullable<Json>,"notes"?: string | null,"number"?: string,"org_id"?: string,"received_at"?: string | null,"sent_at"?: string | null,"status"?: string,"supplier_id"?: string,"total"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -1113,14 +1113,14 @@ isOneToOne: false
                   ]
                 },"stock_items": {
                   Row: {
-                    "category": string,"created_at": string,"created_by": string | null,"hazardous": boolean,"id": string,"label": string,"location_zone_id": string | null,"min_quantity": number,"org_id": string,"quantity": number,"sku": string,"supplier_id": string | null,"unit": string,"unit_cost": number | null,"updated_at": string
+                    "category": string,"created_at": string,"created_by": string | null,"hazardous": boolean,"id": string,"label": string,"location_zone_id": string | null,"min_quantity": number,"org_id": string,"pack_size": number,"quantity": number,"sku": string,"supplier_id": string | null,"unit": string,"unit_cost": number | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "category": string,"created_at"?: string,"created_by"?: string | null,"hazardous"?: boolean,"id"?: string,"label": string,"location_zone_id"?: string | null,"min_quantity"?: number,"org_id": string,"quantity"?: number,"sku": string,"supplier_id"?: string | null,"unit": string,"unit_cost"?: number | null,"updated_at"?: string
+                    "category": string,"created_at"?: string,"created_by"?: string | null,"hazardous"?: boolean,"id"?: string,"label": string,"location_zone_id"?: string | null,"min_quantity"?: number,"org_id": string,"pack_size"?: number,"quantity"?: number,"sku": string,"supplier_id"?: string | null,"unit": string,"unit_cost"?: number | null,"updated_at"?: string
                   }
                   Update: {
-                    "category"?: string,"created_at"?: string,"created_by"?: string | null,"hazardous"?: boolean,"id"?: string,"label"?: string,"location_zone_id"?: string | null,"min_quantity"?: number,"org_id"?: string,"quantity"?: number,"sku"?: string,"supplier_id"?: string | null,"unit"?: string,"unit_cost"?: number | null,"updated_at"?: string
+                    "category"?: string,"created_at"?: string,"created_by"?: string | null,"hazardous"?: boolean,"id"?: string,"label"?: string,"location_zone_id"?: string | null,"min_quantity"?: number,"org_id"?: string,"pack_size"?: number,"quantity"?: number,"sku"?: string,"supplier_id"?: string | null,"unit"?: string,"unit_cost"?: number | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -1235,14 +1235,14 @@ isOneToOne: false
                   ]
                 },"threads": {
                   Row: {
-                    "channel": string,"client_id": string | null,"created_at": string,"created_by": string | null,"id": string,"last_message_at": string,"org_id": string,"subject": string,"updated_at": string,"work_order_id": string | null
+                    "channel": string,"client_id": string | null,"created_at": string,"created_by": string | null,"id": string,"last_message_at": string,"org_id": string,"subject": string,"supplier_id": string | null,"updated_at": string,"work_order_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "channel": string,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"last_message_at"?: string,"org_id": string,"subject": string,"updated_at"?: string,"work_order_id"?: string | null
+                    "channel": string,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"last_message_at"?: string,"org_id": string,"subject": string,"supplier_id"?: string | null,"updated_at"?: string,"work_order_id"?: string | null
                   }
                   Update: {
-                    "channel"?: string,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"last_message_at"?: string,"org_id"?: string,"subject"?: string,"updated_at"?: string,"work_order_id"?: string | null
+                    "channel"?: string,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"last_message_at"?: string,"org_id"?: string,"subject"?: string,"supplier_id"?: string | null,"updated_at"?: string,"work_order_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -1256,6 +1256,12 @@ isOneToOne: false
       columns: ["org_id"]
 isOneToOne: false
       referencedRelation: "orgs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "threads_supplier_id_fkey"
+      columns: ["supplier_id"]
+isOneToOne: false
+      referencedRelation: "suppliers"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "threads_work_order_id_fkey"
@@ -1495,6 +1501,9 @@ isOneToOne: false
                            },
 "next_document_number":
 { Args: { "p_prefix": string,"p_table": string }; Returns: string
+                           },
+"receive_purchase_order":
+{ Args: { "p_po": string }; Returns: Json
                            },
 "refresh_overdue_invoices":
 { Args: Record<PropertyKey, never>; Returns: number

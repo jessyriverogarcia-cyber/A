@@ -80,7 +80,7 @@ export function SelectionPanel() {
     const wo = Object.values(st.workOrders).find((w) => w.asset_id === a.id && w.status === "active");
     title = a.name;
     subtitle = `${a.code}${a.technology ? ` · ${sectorConfig.technologies.find((x) => x.id === a.technology)?.label ?? a.technology}` : ""}`;
-    href = wo ? `/ops/work-orders/${wo.id}` : `/ops/planning`;
+    href = wo ? `/ops/work-orders/${wo.id}` : `/resources/equipment/${a.id}`;
     body = (
       <>
         <Row label={t("status")}>
@@ -121,9 +121,9 @@ export function SelectionPanel() {
           {formatNumber(s.min_quantity)} {s.unit}
         </Row>
         {s.supplier_name && <Row label={t("supplier")}>{s.supplier_name}</Row>}
-        <button disabled title={t("comingP3")} className="mt-3 w-full rounded-lg bg-white/10 py-2 text-xs text-white/60">
-          {t("reorder")} · {t("comingP3")}
-        </button>
+        <Link href={`/resources/stock/${s.id}`} className="mt-3 block w-full rounded-lg bg-white/10 py-2 text-center text-xs hover:bg-white/20" data-testid="map-reorder">
+          {low ? `${t("reorder")} →` : "Voir le stock →"}
+        </Link>
       </>
     );
   } else if (sel.kind === "employee") {

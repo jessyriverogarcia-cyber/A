@@ -312,7 +312,9 @@ async function main() {
         status: a.kind !== "machine" ? "idle" : maintenance.has(a.code) ? "maintenance" : down.has(a.code) ? "down" : idle.has(a.code) ? "idle" : "running",
         specs: a.specs ?? {},
         last_maintenance_on: day(-int(10, 80)),
-        next_maintenance_on: day(int(3, 60)),
+        // FDM-03 : maintenance dépassée, SLS-01 : dans 4 jours (tuiles « à faire »)
+        next_maintenance_on: a.code === "FDM-03" ? day(-3) : a.code === "SLS-01" ? day(4) : day(int(10, 60)),
+        maintenance_interval_days: a.technology === "metal" || a.technology === "gantry" ? 60 : 90,
       })),
     ),
   );
@@ -349,6 +351,7 @@ async function main() {
         supplier_id: supCat ? sup(supCat) : null,
         unit_cost: cost,
         hazardous: category === "powder_metal" || category === "gas",
+        pack_size: category === "powder_metal" ? 5 : category === "powder_polymer" ? 10 : category === "filament" ? 2 : 1,
       })),
     ),
   );
@@ -678,9 +681,13 @@ async function main() {
       return { org_id, month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`, inflow: Math.round(between(180000, 420000) / 1000) * 1000, outflow: Math.round(between(160000, 260000) / 1000) * 1000 };
     }),
   );
+  const poLine = (sku: string, qty: number) => {
+    const it = stock.find((st) => st.sku === sku)!;
+    return { stock_item_id: it.id, sku, label: it.label, qty, unit: it.unit, unit_cost: Number(it.unit_cost) };
+  };
+  // AlSi10Mg déjà commandé (en route) ; le PA12-CF reste à commander : il apparaît dans « à faire ».
   await insert("purchase_orders", [
-    { org_id, supplier_id: sup("powder_metal"), number: `CMD-${year}-0031`, status: "sent", total: 7200, expected_on: day(9), lines: [{ sku: "POW-ALSI", qty: 60 }] },
-    { org_id, supplier_id: sup("filament"), number: `CMD-${year}-0032`, status: "draft", total: 1900, expected_on: day(5), lines: [{ sku: "FIL-PA12CF", qty: 20 }] },
+    { org_id, supplier_id: sup("powder_metal"), number: `CMD-${year}-0031`, status: "sent", sent_at: iso(at(-4, 10)), total: 7200, expected_on: day(9), lines: [poLine("POW-ALSI", 60)] },
   ]);
   await insert("stock_movements", stock.slice(0, 10).map((s, i) => ({ org_id, stock_item_id: s.id, delta: -int(1, 8), reason: "consommation OF", at: iso(at(-(i % 4), 9 + i)) })));
 

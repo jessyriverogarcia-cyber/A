@@ -25,6 +25,12 @@ export function eventLabel(type: string) {
       "badge.break_start": "Départ en pause",
       "work_order.stage": "Changement d'étape",
       "floor_plan.updated": "Plan modifié",
+      "stock.received": "Réception fournisseur",
+      "purchase_order.sent": "Commande fournisseur envoyée",
+      "invoice.sent": "Facture émise",
+      "payment.received": "Paiement reçu",
+      "deal.stage": "Affaire déplacée",
+      "quote.sent": "Devis envoyé",
     } as Record<string, string>
   )[type] ?? type;
 }
@@ -92,6 +98,10 @@ function effectFor(e: MapEvent): { kind: EffectKind; color: string; position: Ve
       const o = objOf("asset", e.entity_id);
       const down = e.type === "asset.down";
       return o ? { kind: down ? "halo_ko" : "halo_ok", color: down ? "#ef4444" : "#22c55e", position: o.position, focus: { kind: "asset", id: e.entity_id! } } : null;
+    }
+    case "stock.received": {
+      const dock = st.zones.find((z) => z.type === "dock") ?? st.zones.find((z) => z.type === "storage");
+      return dock ? { kind: "pulse", color: "#22c55e", position: centerOf(rectOf(dock)) } : null;
     }
     case "badge.in":
     case "badge.break_start":

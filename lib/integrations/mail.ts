@@ -6,7 +6,8 @@ export interface OutgoingMail {
   to: string | null;
   subject: string;
   body: string;
-  clientId: string;
+  clientId?: string | null;
+  supplierId?: string | null;
   workOrderId?: string | null;
   author: string;
   attachments?: { name: string; url: string }[];
@@ -40,18 +41,14 @@ export class MockMailProvider implements MailProvider {
 
   async send(mail: OutgoingMail): Promise<MailResult> {
     const now = new Date().toISOString();
-    const { data: existing } = await this.db
-      .from("threads")
-      .select("id")
-      .eq("client_id", mail.clientId)
-      .eq("subject", mail.subject.replace(/^Relance — /, ""))
-      .limit(1)
-      .maybeSingle();
+    let find = this.db.from("threads").select("id").eq("subject", mail.subject.replace(/^Relance — /, ""));
+    find = mail.clientId ? find.eq("client_id", mail.clientId) : find.eq("supplier_id", mail.supplierId ?? "00000000-0000-0000-0000-000000000000");
+    const { data: existing } = await find.limit(1).maybeSingle();
     let threadId = existing?.id;
     if (!threadId) {
       const { data, error } = await this.db
         .from("threads")
-        .insert({ org_id: this.orgId, subject: mail.subject, channel: "email", client_id: mail.clientId, work_order_id: mail.workOrderId ?? null, last_message_at: now })
+        .insert({ org_id: this.orgId, subject: mail.subject, channel: "email", client_id: mail.clientId ?? null, supplier_id: mail.supplierId ?? null, work_order_id: mail.workOrderId ?? null, last_message_at: now })
         .select("id")
         .single();
       if (error) return { ok: false, simulated: true, reason: error.message };
