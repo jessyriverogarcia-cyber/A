@@ -48,6 +48,6 @@ export async function loadSiteSnapshot(ctx: UserContext, siteKey: string): Promi
       })),
     events: events.data ?? [],
     canEdit: can(ctx, "map", "update"),
-    canRunScenario: isDemoMode() || can(ctx, "ops", "update"),
+    canRunScenario: isDemoMode(), // scénario fictif : jamais sur des données de production
   } as unknown as SiteSnapshot;
 }

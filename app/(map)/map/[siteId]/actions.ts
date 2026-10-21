@@ -11,7 +11,8 @@ import { createClient } from "@/lib/supabase/server";
 /** Déclenche un événement live du scénario de démo (écritures réelles en base). */
 export async function triggerLiveEvent(siteKey: string, eventId: string): Promise<ScenarioResult> {
   const ctx = await requireUser();
-  if (!isDemoMode() && !can(ctx, "ops", "update")) return { ok: false, reason: "Droits insuffisants." };
+  // Le scénario écrit des événements fictifs avec la clé service : réservé au mode démo.
+  if (!isDemoMode()) return { ok: false, reason: "Scénario de démonstration désactivé hors mode démo." };
   if (!sectorConfig.liveEvents.some((e) => e.id === eventId)) return { ok: false, reason: "Événement inconnu." };
 
   // Le moteur de démo écrit avec la clé service : il touche plusieurs modules (CRM, stock, RH)

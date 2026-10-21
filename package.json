@@ -15,6 +15,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset && pnpm db:seed",
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
+    "bootstrap": "tsx --env-file=.env.local scripts/bootstrap.ts",
     "db:types": "supabase gen types typescript --local > lib/supabase/database.types.tmp && mv lib/supabase/database.types.tmp lib/supabase/database.types.ts",
     "check:config": "tsx -e \"import('./config/sector.config.ts').then(m => console.log('OK —', m.sectorConfig.company.name, '·', m.sectorConfig.sites.length, 'sites ·', m.sectorConfig.workOrder.stages.length, 'étapes'))\""
   },

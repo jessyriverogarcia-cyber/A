@@ -147,6 +147,29 @@ L'envoi d'e-mails est **simulé** (badge « envoi simulé ») : le message est r
 La **page technique** (`/settings/tech`) montre la session, la matrice de droits du rôle,
 le nombre de lignes visibles par table (RLS) et le flux `activity_events` en temps réel.
 
+## Assistant IA (`/ai`)
+
+- Conversation en français sur les données de l'entreprise, avec les **droits du rôle** : chaque outil
+  (clients, dossiers, factures, stock, présence, messages, indicateurs) n'est proposé que si le rôle lit
+  le module, et s'exécute avec la session de l'utilisateur (RLS). Les salaires ne sont jamais accessibles.
+- Il peut **préparer un brouillon** de réponse dans un fil ou **proposer une tâche** (créée seulement au clic) ;
+  il ne peut rien envoyer, supprimer ni facturer.
+- Claude (`claude-opus-5-5` par défaut, `AI_MODEL`) via le SDK officiel, réponses diffusées en continu,
+  historique conservé tel quel, repli automatique côté serveur en cas de refus.
+- Sans `ANTHROPIC_API_KEY` : **mode simulé** annoncé, qui répond à quelques questions types à partir des mêmes outils.
+
+## Automatisations, temps réel et intégrations
+
+- **Traitements quotidiens** (pg_cron, 4 h UTC) : factures échues, devis expirés ou à relancer, maintenances
+  dues, habilitations à renouveler → notifications aux bonnes personnes, une seule fois par alerte.
+  Historique et lancement manuel : Page technique.
+- **Temps réel** : cloche des notifications, boîte de réception, fil, dossiers, stock et pilotage se mettent à jour sans recharger.
+- **Messagerie** (Paramètres › Intégrations) : connexion OAuth de la boîte de l'entreprise (Microsoft 365 ou
+  Google Workspace) ; les devis, factures, relances, commandes et réponses partent alors réellement,
+  PDF joints. Tant que rien n'est connecté : envoi simulé, affiché comme tel.
+- **Mise en production** : voir [`docs/DEPLOIEMENT.md`](docs/DEPLOIEMENT.md) (`pnpm bootstrap` crée une organisation réelle sans données de démo).
+- **Recette** : état réel exigence par exigence dans [`docs/RECETTE.md`](docs/RECETTE.md).
+
 ## Architecture
 
 | Dossier | Rôle |
@@ -158,6 +181,9 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 | `lib/supabase/`, `lib/auth.ts` | Clients Supabase (navigateur, serveur, middleware), contexte utilisateur |
 | `components/map/` | Scène 3D : kits procéduraux (imprimantes, portiques, avions, mobilier), personnes, effets, HUD |
 | `lib/map/` | Données de la map : chargement, état (Zustand), disposition, temps réel, moteur du scénario |
+| `lib/ai/` | Assistant : boucle d'outils Claude, outils filtrés par les droits, mode simulé |
+| `lib/integrations/` | Messagerie (simulation, Microsoft Graph, Gmail), OAuth, chiffrement des jetons |
+| `lib/services/` | Opérations métier partagées (devis, OF, factures, stock, RH, communication, pilotage) |
 | `app/` | Next.js 15 (App Router) : connexion, Map, back-office, paramètres |
 
 ## État d'avancement
@@ -173,7 +199,8 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
   - [x] RH : mon espace (badgeuse, heures, congés), à faire aujourd'hui, équipe, présences, congés, recrutement, variables de paie
   - [x] Communication : boîte de réception unifiée, brouillons préparés, notes internes, documents, notifications
   - [x] Pilotage : ma journée, tableau de bord direction, journal d'audit
-- [ ] Phase 4 — intégrations, IA, finitions, déploiement
+- [x] Phase 4 — assistant IA, traitements planifiés, temps réel du back-office, intégrations messagerie, performance (RLS et index), sécurité (CSP, mode démo), mise en production
 
-**Mode simulé :** aucune intégration (Microsoft 365, Google Workspace, SSO, API Claude) n'est branchée.
-Les boutons SSO sont affichés « Non configuré ».
+**Ce qui reste simulé ou à faire** (détail dans `docs/RECETTE.md`) : sans clés, l'IA et l'envoi d'e-mails
+sont simulés et affichés comme tels ; la synchronisation des agendas, la réception des e-mails entrants,
+le SSO de connexion, Factur-X, les RTT et la saisie des notes de frais ne sont pas faits.
