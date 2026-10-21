@@ -10,10 +10,11 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { StockGauge } from "@/components/resources/StockGauge";
 import { reorderAction } from "../actions";
 import { LiveRefresh } from "@/components/realtime/LiveRefresh";
+import { STOCK_CATEGORIES } from "@/components/resources/status";
 
 export const metadata = { title: "Stock" };
 
-const CATEGORIES: Record<string, string> = { filament: "Filaments", resin: "Résines", powder_polymer: "Poudres polymère", powder_metal: "Poudres métal", gas: "Gaz", finished_part: "Pièces finies" };
+const CATEGORIES = STOCK_CATEGORIES;
 
 export default async function StockPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const sp = await searchParams;

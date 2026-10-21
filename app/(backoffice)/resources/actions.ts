@@ -78,19 +78,24 @@ export async function sendPoAction(form: FormData) {
   redirect(`/resources/purchase-orders/${id}?ok=${q(`Commande envoyée au fournisseur${res.simulated ? " (simulation)" : ""}.`)}`);
 }
 
+/** Réception totale (« tout le reste ») ou partielle (quantités saisies par ligne). */
 export async function receivePoAction(form: FormData) {
   const { db } = await guard("update");
   const id = String(form.get("po_id"));
-  const { data, error } = await db.rpc("receive_purchase_order", { p_po: id });
+  const partial = form.get("mode") === "partial";
+  const qty: Record<string, number> = {};
+  for (const [k, v] of form.entries()) if (k.startsWith("recv_")) qty[k.slice(5)] = Number(String(v).replace(",", ".")) || 0;
+  const { data, error } = await db.rpc("receive_purchase_order_lines", { p_po: id, p_qty: (partial ? qty : null) as never, p_note: str(form.get("note")) ?? undefined });
   if (error) redirect(`/resources/purchase-orders/${id}?err=${q(error.message)}`);
-  const r = data as { received: boolean; lines: number };
-  redirect(`/resources/purchase-orders/${id}?ok=${q(r.received ? `Réception enregistrée : ${r.lines} article(s) remis en stock — les rayonnages de la Map se remplissent.` : "Commande déjà réceptionnée.")}`);
+  const r = data as { received: boolean; lines: number; status: string };
+  if (!r.received) redirect(`/resources/purchase-orders/${id}?err=${q("Rien à réceptionner : saisissez au moins une quantité reçue.")}`);
+  redirect(`/resources/purchase-orders/${id}?ok=${q(r.status === "received" ? `Commande soldée : ${r.lines} article(s) remis en stock — les rayonnages de la Map se remplissent.` : `Réception partielle enregistrée (${r.lines} article(s)). Le reliquat reste attendu.`)}`);
 }
 
 export async function cancelPoAction(form: FormData) {
   const { db } = await guard("update");
   const id = String(form.get("po_id"));
-  await db.from("purchase_orders").update({ status: "cancelled" }).eq("id", id).in("status", ["draft", "sent"]);
+  await db.from("purchase_orders").update({ status: "cancelled" }).eq("id", id).in("status", ["draft", "sent", "partially_received"]);
   redirect(`/resources/purchase-orders/${id}?ok=${q("Commande annulée.")}`);
 }
 
@@ -153,4 +158,70 @@ export async function scheduleMaintenanceAction(form: FormData) {
   await db.from("assets").update({ next_maintenance_on: date }).eq("id", id);
   await db.from("calendar_events").insert({ org_id: ctx.org.id, asset_id: id, kind: "maintenance", title: `Maintenance ${a?.code ?? ""}`, starts_at: new Date(`${date}T07:00:00`).toISOString(), ends_at: new Date(`${date}T12:00:00`).toISOString() });
   redirect(`/resources/equipment/${id}?ok=${q("Maintenance planifiée et ajoutée au planning.")}`);
+}
+
+// --- Fournisseurs ------------------------------------------------------------------
+
+const Supplier = z.object({
+  name: z.string().trim().min(2, "Nom obligatoire"),
+  category: z.string().trim().nullable(),
+  contact_name: z.string().trim().nullable(),
+  email: z.string().trim().email("E-mail invalide").nullable(),
+  phone: z.string().trim().nullable(),
+  address: z.string().trim().nullable(),
+  vat_number: z.string().trim().nullable(),
+  siret: z.string().trim().regex(/^\d{14}$/, "SIRET : 14 chiffres").nullable(),
+  lead_time_days: z.coerce.number().int().min(0).max(365).nullable(),
+  payment_terms_days: z.coerce.number().int().min(0).max(120),
+  notes: z.string().trim().nullable(),
+});
+
+function supplierFrom(form: FormData) {
+  const v = (k: string) => {
+    const x = str(form.get(k));
+    return k === "siret" && x ? x.replace(/\s/g, "") : x;
+  };
+  return Supplier.safeParse({
+    name: v("name") ?? "", category: v("category"), contact_name: v("contact_name"), email: v("email"), phone: v("phone"), address: v("address"),
+    vat_number: v("vat_number"), siret: v("siret"), lead_time_days: v("lead_time_days"), payment_terms_days: v("payment_terms_days") ?? 30, notes: v("notes"),
+  });
+}
+
+export async function createSupplierAction(form: FormData) {
+  const { ctx, db } = await guard("create");
+  const p = supplierFrom(form);
+  if (!p.success) redirect(`/resources/suppliers/new?err=${q(p.error.issues[0].message)}`);
+  const { data, error } = await db.from("suppliers").insert({ org_id: ctx.org.id, ...p.data }).select("id").single();
+  if (error) redirect(`/resources/suppliers/new?err=${q(error.message)}`);
+  redirect(`/resources/suppliers/${data.id}?ok=${q("Fournisseur créé.")}`);
+}
+
+export async function updateSupplierAction(form: FormData) {
+  const { db } = await guard("update");
+  const id = String(form.get("supplier_id"));
+  const p = supplierFrom(form);
+  if (!p.success) redirect(`/resources/suppliers/${id}?err=${q(p.error.issues[0].message)}`);
+  const { error } = await db.from("suppliers").update(p.data).eq("id", id);
+  if (error) redirect(`/resources/suppliers/${id}?err=${q(error.message)}`);
+  redirect(`/resources/suppliers/${id}?ok=${q("Fiche fournisseur enregistrée.")}`);
+}
+
+/** Un fournisseur qui a des commandes s'archive (l'historique reste) ; sinon il peut être supprimé. */
+export async function archiveSupplierAction(form: FormData) {
+  const { db } = await guard("update");
+  const id = String(form.get("supplier_id"));
+  const active = form.get("active") === "true";
+  await db.from("suppliers").update({ active }).eq("id", id);
+  redirect(`/resources/suppliers/${id}?ok=${q(active ? "Fournisseur réactivé." : "Fournisseur archivé : il n'est plus proposé au réassort.")}`);
+}
+
+export async function deleteSupplierAction(form: FormData) {
+  const { db } = await guard("delete");
+  const id = String(form.get("supplier_id"));
+  const { count } = await db.from("purchase_orders").select("id", { count: "exact", head: true }).eq("supplier_id", id);
+  if (count) redirect(`/resources/suppliers/${id}?err=${q("Ce fournisseur a des commandes : archivez-le plutôt.")}`);
+  await db.from("stock_items").update({ supplier_id: null }).eq("supplier_id", id);
+  const { error } = await db.from("suppliers").delete().eq("id", id);
+  if (error) redirect(`/resources/suppliers/${id}?err=${q(error.message)}`);
+  redirect(`/resources/suppliers?ok=${q("Fournisseur supprimé.")}`);
 }

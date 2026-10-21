@@ -24,16 +24,17 @@ const PO_PREFIX = "CMD";
 export async function createReorders(db: Db, orgId: string, itemIds: string[]) {
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
   const [{ data: items }, { data: moves }, { data: open }] = await Promise.all([
-    db.from("stock_items").select("id, sku, label, unit, quantity, min_quantity, unit_cost, pack_size, supplier_id, suppliers(lead_time_days)").in("id", itemIds),
+    db.from("stock_items").select("id, sku, label, unit, quantity, min_quantity, unit_cost, pack_size, supplier_id, suppliers(lead_time_days, active)").in("id", itemIds),
     db.from("stock_movements").select("stock_item_id, delta, at").in("stock_item_id", itemIds).gte("at", since),
-    db.from("purchase_orders").select("id, lines").in("status", ["draft", "sent"]),
+    db.from("purchase_orders").select("id, lines").in("status", ["draft", "sent", "partially_received"]),
   ]);
   const pending = new Set(((open ?? []) as unknown as { lines: PoLine[] }[]).flatMap((p) => p.lines.map((l) => l.stock_item_id)));
   const bySupplier = new Map<string, { lead: number; lines: PoLine[] }>();
   const skipped: string[] = [];
 
   for (const it of items ?? []) {
-    if (!it.supplier_id || pending.has(it.id)) {
+    const sup = it.suppliers as unknown as { lead_time_days: number | null; active: boolean } | null;
+    if (!it.supplier_id || pending.has(it.id) || sup?.active === false) {
       skipped.push(it.label);
       continue;
     }

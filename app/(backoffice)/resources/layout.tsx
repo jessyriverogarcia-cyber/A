@@ -18,6 +18,7 @@ export default async function ResourcesLayout({ children }: { children: React.Re
           { href: "/resources", label: "À faire aujourd'hui" },
           { href: "/resources/stock", label: "Stock" },
           { href: "/resources/purchase-orders", label: "Commandes fournisseurs" },
+          { href: "/resources/suppliers", label: "Fournisseurs" },
           { href: "/resources/equipment", label: "Équipements" },
         ]}
       />

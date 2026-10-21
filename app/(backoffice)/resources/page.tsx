@@ -26,13 +26,13 @@ export default async function ResourcesHome({ searchParams }: { searchParams: Pr
 
   const [{ data: items }, { data: pos }, { data: assets }] = await Promise.all([
     db.from("stock_items").select("id, sku, label, category, unit, quantity, min_quantity, unit_cost, hazardous, suppliers(name)").order("label"),
-    db.from("purchase_orders").select("id, number, status, total, expected_on, lines, suppliers(name)").in("status", ["draft", "sent"]).order("expected_on"),
+    db.from("purchase_orders").select("id, number, status, total, expected_on, lines, suppliers(name)").in("status", ["draft", "sent", "partially_received"]).order("expected_on"),
     db.from("assets").select("id, code, name, kind, status, next_maintenance_on").in("kind", ["machine", "equipment"]).order("code"),
   ]);
   const onOrder = new Set((pos ?? []).flatMap((p) => (p.lines as unknown as { stock_item_id?: string }[]).map((l) => l.stock_item_id)));
   const low = (items ?? []).filter((i) => Number(i.quantity) < Number(i.min_quantity));
   const toOrder = low.filter((i) => !onOrder.has(i.id));
-  const incoming = (pos ?? []).filter((p) => p.status === "sent");
+  const incoming = (pos ?? []).filter((p) => p.status === "sent" || p.status === "partially_received");
   const drafts = (pos ?? []).filter((p) => p.status === "draft");
   const down = (assets ?? []).filter((a) => a.status === "down");
   const maint = (assets ?? []).filter((a) => ["overdue", "due_soon"].includes(maintenanceState(a.next_maintenance_on, today)));

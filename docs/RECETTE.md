@@ -31,7 +31,7 @@ La section 11 du prompt maître étant tronquée, cette liste reprend les exigen
 | Commercial | ✅ | — |
 | Production | ✅ | — |
 | Finance | ✅ | Factur-X / facture électronique (obligation 2026-2027) ⛔ |
-| Ressources & stock | ✅ | CRUD fournisseurs ⛔, réception partielle ⛔ |
+| Ressources & stock | ✅ | fournisseurs (fiche, taux de service, archivage) et réception partielle faits |
 | RH et Mon espace | ✅ | calcul des RTT ⛔ |
 | Notes de frais | ✅ | saisie (montant ou km, justificatif photo/PDF), politique de frais (plafonds, TVA, ancienneté), validation en lot, paie, refacturation au client |
 | Communication | ✅ | réception des e-mails entrants depuis Outlook/Gmail ⛔ (seul l'envoi est branché) |

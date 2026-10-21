@@ -21,7 +21,7 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
       <Table head={["N°", "Fournisseur", "Articles", "Total HT", "Livraison prévue", "Statut"]} empty={!pos?.length && <EmptyState title="Aucune commande" hint="Commandez depuis l'onglet Stock ou « À faire aujourd'hui »." />}>
         {(pos ?? []).map((p) => {
           const lines = p.lines as unknown as { label: string }[];
-          const late = p.status === "sent" && p.expected_on && p.expected_on < today;
+          const late = (p.status === "sent" || p.status === "partially_received") && p.expected_on && p.expected_on < today;
           return (
             <tr key={p.id} className="hover:bg-surface-2/60">
               <Td><Link href={`/resources/purchase-orders/${p.id}`} className="font-medium hover:text-accent">{p.number}</Link></Td>

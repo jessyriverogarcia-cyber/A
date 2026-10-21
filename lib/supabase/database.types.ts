@@ -1035,6 +1035,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"purchase_order_receipts": {
+                  Row: {
+                    "id": string,"lines": NonNullable<Json>,"note": string | null,"org_id": string,"purchase_order_id": string,"received_at": string,"received_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"lines": NonNullable<Json>,"note"?: string | null,"org_id": string,"purchase_order_id": string,"received_at"?: string,"received_by"?: string | null
+                  }
+                  Update: {
+                    "id"?: string,"lines"?: NonNullable<Json>,"note"?: string | null,"org_id"?: string,"purchase_order_id"?: string,"received_at"?: string,"received_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "purchase_order_receipts_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "orgs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "purchase_order_receipts_purchase_order_id_fkey"
+      columns: ["purchase_order_id"]
+isOneToOne: false
+      referencedRelation: "purchase_orders"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"purchase_orders": {
                   Row: {
                     "created_at": string,"created_by": string | null,"expected_on": string | null,"id": string,"lines": NonNullable<Json>,"notes": string | null,"number": string,"org_id": string,"received_at": string | null,"sent_at": string | null,"status": string,"supplier_id": string,"total": number,"updated_at": string
@@ -1281,14 +1307,14 @@ isOneToOne: false
                   ]
                 },"suppliers": {
                   Row: {
-                    "category": string | null,"created_at": string,"created_by": string | null,"email": string | null,"id": string,"lead_time_days": number | null,"name": string,"org_id": string,"phone": string | null,"updated_at": string
+                    "active": boolean,"address": string | null,"category": string | null,"contact_name": string | null,"created_at": string,"created_by": string | null,"email": string | null,"id": string,"lead_time_days": number | null,"name": string,"notes": string | null,"org_id": string,"payment_terms_days": number,"phone": string | null,"siret": string | null,"updated_at": string,"vat_number": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "category"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"lead_time_days"?: number | null,"name": string,"org_id": string,"phone"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"address"?: string | null,"category"?: string | null,"contact_name"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"lead_time_days"?: number | null,"name": string,"notes"?: string | null,"org_id": string,"payment_terms_days"?: number,"phone"?: string | null,"siret"?: string | null,"updated_at"?: string,"vat_number"?: string | null
                   }
                   Update: {
-                    "category"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"lead_time_days"?: number | null,"name"?: string,"org_id"?: string,"phone"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"address"?: string | null,"category"?: string | null,"contact_name"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"lead_time_days"?: number | null,"name"?: string,"notes"?: string | null,"org_id"?: string,"payment_terms_days"?: number,"phone"?: string | null,"siret"?: string | null,"updated_at"?: string,"vat_number"?: string | null
                   }
                   Relationships: [
                     {
@@ -1722,6 +1748,9 @@ isOneToOne: false
                            },
 "receive_purchase_order":
 { Args: { "p_po": string }; Returns: Json
+                           },
+"receive_purchase_order_lines":
+{ Args: { "p_note"?: string,"p_po": string,"p_qty": Json }; Returns: Json
                            },
 "refresh_overdue_invoices":
 { Args: Record<PropertyKey, never>; Returns: number

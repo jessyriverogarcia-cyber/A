@@ -278,11 +278,11 @@ async function main() {
   const suppliers = await insert(
     "suppliers",
     withOrg([
-      { name: "Polymères du Médoc", category: "filament", email: "contact@polymeres-medoc.test", lead_time_days: 4 },
-      { name: "RésinaLab", category: "resin", email: "ventes@resinalab.test", lead_time_days: 6 },
-      { name: "Poudres Pyrénées", category: "powder_polymer", email: "commandes@poudres-pyrenees.test", lead_time_days: 10 },
-      { name: "MétalAtome", category: "powder_metal", email: "orders@metalatome.test", lead_time_days: 21 },
-      { name: "Gaz Inertes Sud-Ouest", category: "gas", email: "service@gaz-so.test", lead_time_days: 3 },
+      { name: "Polymères du Médoc", category: "filament", email: "contact@polymeres-medoc.test", lead_time_days: 4, contact_name: "Service clients", address: "8 allée des Vignes, 33700 Mérignac", payment_terms_days: 30 },
+      { name: "RésinaLab", category: "resin", email: "ventes@resinalab.test", lead_time_days: 6, contact_name: "Aurélie Garnier", address: "2 rue de la Chimie, 69007 Lyon", payment_terms_days: 45 },
+      { name: "Poudres Pyrénées", category: "powder_polymer", email: "commandes@poudres-pyrenees.test", lead_time_days: 10, contact_name: "Bureau des ventes", address: "Zone des Gaves, 64000 Pau", payment_terms_days: 30 },
+      { name: "MétalAtome", category: "powder_metal", email: "orders@metalatome.test", lead_time_days: 21, contact_name: "Service commandes", address: "15 quai de l'Industrie, 38000 Grenoble", payment_terms_days: 60, notes: "Certificats matière EN 10204 3.1 fournis avec chaque lot." },
+      { name: "Gaz Inertes Sud-Ouest", category: "gas", email: "service@gaz-so.test", lead_time_days: 3, contact_name: "Astreinte livraisons", address: "Port autonome, 33530 Bassens", payment_terms_days: 30 },
     ]),
   );
   const sup = (cat: string) => suppliers.find((s) => s.category === cat)!.id;
@@ -740,6 +740,13 @@ async function main() {
     return { stock_item_id: it.id, sku, label: it.label, qty, unit: it.unit, unit_cost: Number(it.unit_cost) };
   };
   // AlSi10Mg déjà commandé (en route) ; le PA12-CF reste à commander : il apparaît dans « à faire ».
+  // Historique reçu (taux de service fournisseurs) puis la commande en route
+  const received = (sku: string, qty: number) => ({ ...poLine(sku, qty), received: qty });
+  await insert("purchase_orders", [
+    { org_id, supplier_id: sup("powder_polymer"), number: `CMD-${year}-0028`, status: "received", sent_at: iso(at(-52, 10)), expected_on: day(-42), received_at: iso(at(-43, 9)), total: 1840, lines: [received("POW-PA12", 40)] },
+    { org_id, supplier_id: sup("resin"), number: `CMD-${year}-0029`, status: "received", sent_at: iso(at(-33, 10)), expected_on: day(-27), received_at: iso(at(-23, 9)), total: 960, lines: [received("RES-BIO", 12)] },
+    { org_id, supplier_id: sup("filament"), number: `CMD-${year}-0030`, status: "received", sent_at: iso(at(-16, 10)), expected_on: day(-12), received_at: iso(at(-12, 15)), total: 720, lines: [received("FIL-PA12CF", 24)] },
+  ]);
   await insert("purchase_orders", [
     { org_id, supplier_id: sup("powder_metal"), number: `CMD-${year}-0031`, status: "sent", sent_at: iso(at(-4, 10)), total: 7200, expected_on: day(9), lines: [poLine("POW-ALSI", 60)] },
   ]);
