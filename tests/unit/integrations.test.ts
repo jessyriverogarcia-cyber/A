@@ -108,3 +108,31 @@ describe("agenda partagé", () => {
     expect(providerPayload("microsoft", { title: "Maintenance FDM-05", start: "2026-10-22T05:00:00Z", end: "2026-10-22T10:00:00Z" }, "Europe/Paris")).toMatchObject({ start: { dateTime: "2026-10-22T05:00:00", timeZone: "UTC" } });
   });
 });
+
+describe("relève des e-mails entrants", () => {
+  it("Microsoft Graph : boîte de réception depuis le curseur, corps en texte", async () => {
+    const calls: { url: string; init?: RequestInit }[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      return Response.json({ value: [{ id: "m1", subject: "RE: Devis", receivedDateTime: "2026-10-21T08:00:00Z", from: { emailAddress: { address: "a@client.test", name: "A" } }, body: { content: "Oui" } }] });
+    }));
+    const { fetchInbound } = await import("@/lib/integrations/inbox");
+    const r = await fetchInbound("microsoft", "tok", new Date("2026-10-20T00:00:00Z"));
+    expect(r).toHaveLength(1);
+    expect(calls[0].url).toContain("receivedDateTime%20ge%202026-10-20T00%3A00%3A00.000Z");
+    expect(calls[0].url).not.toContain("+");
+    expect((calls[0].init?.headers as Record<string, string>).Prefer).toContain("text");
+  });
+
+  it("Gmail : liste puis détail de chaque message", async () => {
+    const data = Buffer.from("Quel délai ?").toString("base64url");
+    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+      url.includes("/messages?")
+        ? Response.json({ messages: [{ id: "g1" }] })
+        : Response.json({ id: "g1", internalDate: String(Date.parse("2026-10-21T09:00:00Z")), payload: { mimeType: "text/plain", body: { data }, headers: [{ name: "From", value: "p@fournisseur.test" }, { name: "Subject", value: "Commande" }] } }),
+    ));
+    const { fetchInbound } = await import("@/lib/integrations/inbox");
+    const r = await fetchInbound("google", "tok", new Date("2026-10-20T00:00:00Z"));
+    expect(r[0]).toMatchObject({ externalId: "gm:g1", from: "p@fournisseur.test", text: "Quel délai ?" });
+  });
+});

@@ -11,6 +11,8 @@ import { sectorConfig } from "@/config/sector.config";
 import { Badge } from "@/components/ui/primitives";
 import { EmptyState, Flash, LinkButton, PageHeader, SimulatedBadge } from "@/components/ui/backoffice";
 import { mailMode } from "@/lib/integrations/mail";
+import { syncInboxAction } from "./actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { LiveRefresh } from "@/components/realtime/LiveRefresh";
 
 export const metadata = { title: "Communication" };
@@ -75,6 +77,11 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
         actions={
           <>
             {mailbox.simulated && <SimulatedBadge />}
+            {!mailbox.simulated && write && (
+              <form action={syncInboxAction}>
+                <SubmitButton variant="secondary" testId="sync-inbox">Relever la boîte</SubmitButton>
+              </form>
+            )}
             {write && <LinkButton href="/comms/new">Nouveau message</LinkButton>}
           </>
         }

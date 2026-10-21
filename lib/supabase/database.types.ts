@@ -663,14 +663,14 @@ isOneToOne: false
                   ]
                 },"integration_accounts": {
                   Row: {
-                    "account_email": string,"connected_at": string,"connected_by": string | null,"id": string,"last_error": string | null,"last_used_at": string | null,"org_id": string,"provider": string,"scopes": (string)[],"token_ciphertext": string
+                    "account_email": string,"connected_at": string,"connected_by": string | null,"id": string,"inbox_synced_at": string | null,"last_error": string | null,"last_used_at": string | null,"org_id": string,"provider": string,"scopes": (string)[],"token_ciphertext": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_email": string,"connected_at"?: string,"connected_by"?: string | null,"id"?: string,"last_error"?: string | null,"last_used_at"?: string | null,"org_id": string,"provider": string,"scopes"?: (string)[],"token_ciphertext": string
+                    "account_email": string,"connected_at"?: string,"connected_by"?: string | null,"id"?: string,"inbox_synced_at"?: string | null,"last_error"?: string | null,"last_used_at"?: string | null,"org_id": string,"provider": string,"scopes"?: (string)[],"token_ciphertext": string
                   }
                   Update: {
-                    "account_email"?: string,"connected_at"?: string,"connected_by"?: string | null,"id"?: string,"last_error"?: string | null,"last_used_at"?: string | null,"org_id"?: string,"provider"?: string,"scopes"?: (string)[],"token_ciphertext"?: string
+                    "account_email"?: string,"connected_at"?: string,"connected_by"?: string | null,"id"?: string,"inbox_synced_at"?: string | null,"last_error"?: string | null,"last_used_at"?: string | null,"org_id"?: string,"provider"?: string,"scopes"?: (string)[],"token_ciphertext"?: string
                   }
                   Relationships: [
                     {
@@ -875,14 +875,14 @@ isOneToOne: false
                   ]
                 },"messages": {
                   Row: {
-                    "ai_draft": boolean,"author": string,"body": string,"created_at": string,"created_by": string | null,"direction": string,"id": string,"org_id": string,"sent_at": string | null,"thread_id": string,"updated_at": string
+                    "ai_draft": boolean,"author": string,"body": string,"created_at": string,"created_by": string | null,"direction": string,"external_id": string | null,"id": string,"org_id": string,"sent_at": string | null,"thread_id": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "ai_draft"?: boolean,"author": string,"body": string,"created_at"?: string,"created_by"?: string | null,"direction": string,"id"?: string,"org_id": string,"sent_at"?: string | null,"thread_id": string,"updated_at"?: string
+                    "ai_draft"?: boolean,"author": string,"body": string,"created_at"?: string,"created_by"?: string | null,"direction": string,"external_id"?: string | null,"id"?: string,"org_id": string,"sent_at"?: string | null,"thread_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "ai_draft"?: boolean,"author"?: string,"body"?: string,"created_at"?: string,"created_by"?: string | null,"direction"?: string,"id"?: string,"org_id"?: string,"sent_at"?: string | null,"thread_id"?: string,"updated_at"?: string
+                    "ai_draft"?: boolean,"author"?: string,"body"?: string,"created_at"?: string,"created_by"?: string | null,"direction"?: string,"external_id"?: string | null,"id"?: string,"org_id"?: string,"sent_at"?: string | null,"thread_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {

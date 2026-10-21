@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/ical"]; // /ical : flux d'agenda lu sans session (jeton)
+const PUBLIC_PATHS = ["/login", "/auth", "/ical", "/jobs"]; // /ical : flux d'agenda (jeton) ; /jobs : tâches planifiées (CRON_SECRET)
 
 /** Rafraîchit la session Supabase et protège toutes les pages hors connexion. */
 export async function updateSession(request: NextRequest) {

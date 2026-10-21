@@ -3,7 +3,7 @@ import { sectorConfig } from "@/config/sector.config";
 import { Card, Logo } from "@/components/ui/primitives";
 import { DEMO_ACCOUNTS, isDemoMode } from "@/lib/demo";
 import { LoginForm, MfaForm } from "./forms";
-import { signInDemo } from "./actions";
+import { signInDemo, signOut } from "./actions";
 
 export const metadata = { title: "Connexion" };
 
@@ -57,7 +57,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <p className="mt-1 text-sm text-muted">{t("subtitle")}</p>
           </div>
 
-          {params.mfa ? <MfaForm next={next} /> : <LoginForm next={next} error={params.error} />}
+          {params.error === "no_access" && (
+            <div className="rounded-lg border border-warn/40 bg-warn/10 p-3 text-sm" role="alert" data-testid="no-access">
+              <p className="font-medium">{t("noAccess")}</p>
+              <p className="mt-1 text-muted">{t("noAccessHint")}</p>
+              <form action={signOut} className="mt-2">
+                <button className="text-sm text-accent">{t("useAnotherAccount")}</button>
+              </form>
+            </div>
+          )}
+          {params.mfa ? <MfaForm next={next} /> : <LoginForm next={next} error={params.error} ssoProviders={(process.env.NEXT_PUBLIC_SSO_PROVIDERS ?? "").split(",").map((s) => s.trim()).filter(Boolean)} />}
 
           {isDemoMode() && !params.mfa && (
             <Card className="p-4">

@@ -24,7 +24,11 @@ export const getUserContext = cache(async (): Promise<UserContext | null> => {
 
 export async function requireUser(): Promise<UserContext> {
   const ctx = await getUserContext();
-  if (!ctx) redirect("/login");
+  if (!ctx) {
+    // Session valide (SSO, lien magique) mais aucun profil dans une organisation : accès non accordé.
+    const { data } = await (await createClient()).auth.getUser();
+    redirect(data.user ? "/login?error=no_access" : "/login");
+  }
   return ctx;
 }
 

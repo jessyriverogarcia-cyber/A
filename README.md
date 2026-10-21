@@ -144,6 +144,12 @@ L'envoi d'e-mails est **simulé** (badge « envoi simulé ») : le message est r
   filtres, historique d'une fiche, export CSV. La RLS ne montre que les tables des modules lisibles par le rôle
   (la production ne voit pas l'historique des factures, les salaires restent réservés).
 
+## Utilisateurs et connexion (`/settings/users`)
+
+- Invitation par e-mail avec rôle et salarié rattaché, changement de rôle, retrait d'accès (le compte est bloqué,
+  l'historique reste) ; il reste toujours au moins un compte direction.
+- Connexion par mot de passe, lien magique, TOTP, et SSO Microsoft / Google quand il est configuré dans Supabase Auth.
+
 ## Agenda (`/planning`)
 
 - Semaine par personne ou pour l'équipe : réunions, rendez-vous clients, absences validées, maintenances.
@@ -221,4 +227,5 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 - [x] Phase 4 — assistant IA, traitements planifiés, temps réel du back-office, intégrations messagerie, performance (RLS et index), sécurité (CSP, mode démo), mise en production
 
 **Ce qui reste simulé ou à faire** (détail dans `docs/RECETTE.md`) : sans clés, l'IA et l'envoi d'e-mails
-sont simulés et affichés comme tels ; la réception des e-mails entrants et le SSO de connexion ne sont pas faits ; Factur-X est partiel (XML EN 16931 validé, PDF non certifié PDF/A-3, pas de transmission PDP).
+sont simulés et affichés comme tels ; la relève des e-mails entrants, l'agenda connecté et le SSO sont codés mais non testés
+contre de vrais comptes Microsoft / Google ; Factur-X est partiel (XML EN 16931 validé, PDF non certifié PDF/A-3, pas de transmission PDP).

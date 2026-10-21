@@ -34,7 +34,7 @@ La section 11 du prompt maître étant tronquée, cette liste reprend les exigen
 | Ressources & stock | ✅ | fournisseurs (fiche, taux de service, archivage) et réception partielle faits |
 | RH et Mon espace | ✅ | RTT (horaire au-delà de 35 h, forfait jours) avec solde et contrôle des demandes |
 | Notes de frais | ✅ | saisie (montant ou km, justificatif photo/PDF), politique de frais (plafonds, TVA, ancienneté), validation en lot, paie, refacturation au client |
-| Communication | ✅ | réception des e-mails entrants depuis Outlook/Gmail ⛔ (seul l'envoi est branché) |
+| Communication | ✅ / 🟡 | e-mails entrants : relève Graph / Gmail (manuelle et planifiée), rattachement au fil, brouillon et notification — testés avec des API simulées uniquement |
 | Pilotage, journal d'audit | ✅ | — |
 | Assistant IA | ✅ / 🟡 | boucle vérifiée contre une fausse API ; pas d'appel réel faute de clé dans cet environnement |
 
@@ -44,7 +44,7 @@ La section 11 du prompt maître étant tronquée, cette liste reprend les exigen
 | --- | --- | --- |
 | Envoi d'e-mails Microsoft 365 / Gmail | 🟡 | OAuth + PKCE, jetons chiffrés, Graph `sendMail` / Gmail `send` testés avec un `fetch` simulé ; aucun locataire réel testé |
 | Agendas | ✅ / 🟡 | agenda intégré (semaine, invités notifiés) et **flux iCal personnel** (abonnement Outlook / Google / Apple, jeton révocable) faits et testés ; publication des absences et maintenances dans l'agenda de la boîte connectée testée avec une API simulée uniquement |
-| SSO (connexion Microsoft / Google) | ⛔ | boutons affichés « Non configuré » ; à activer dans Supabase Auth |
+| SSO (connexion Microsoft / Google) | 🟡 | boutons actifs dès que les fournisseurs Supabase Auth sont déclarés ; invitation et gestion des utilisateurs faites et testées ; connexion réelle non testée (aucun locataire ici) |
 | Assistant Claude | 🟡 | actif dès que `ANTHROPIC_API_KEY` est défini |
 | Traitements planifiés (pg_cron) | ✅ | e2e : exécution manuelle et dédoublonnage |
 

@@ -86,7 +86,23 @@ Ensuite, dans l'application :
 Puis, connecté en direction : Paramètres › Intégrations › Connecter. Les jetons sont chiffrés
 (AES-256-GCM) avec `INTEGRATIONS_SECRET` avant d'être stockés ; changer cette clé impose de reconnecter la boîte.
 
-## 6. Exploitation
+## 6. Connexion SSO (Microsoft / Google)
+
+1. Supabase › Authentication › Providers : activer **Azure** (inscription Entra ID, URL de retour
+   `https://<projet>.supabase.co/auth/v1/callback`, portée `email`) et/ou **Google**.
+2. `NEXT_PUBLIC_SSO_PROVIDERS=azure,google` côté application : les boutons de connexion deviennent actifs.
+3. Les comptes sont créés par invitation (Paramètres › Utilisateurs) ; une personne invitée se connecte avec son
+   compte professionnel de même adresse. Un compte sans profil voit « Ce compte n'a pas accès à l'application ».
+
+## 7. E-mails entrants
+
+- Boîte connectée (section 5) : portées de lecture `Mail.Read` (Microsoft) ou `gmail.readonly` (Google) —
+  reconnecter la boîte si elle l'a été avant cette version.
+- Relève automatique toutes les 10 minutes : `vercel.json` (Vercel Cron appelle `/jobs/inbox` avec
+  `Authorization: Bearer $CRON_SECRET`). Hors Vercel : tout planificateur qui appelle cette URL avec ce secret.
+- Seuls les messages de contacts clients et de fournisseurs connus sont rangés ; les autres sont ignorés.
+
+## 8. Exploitation
 
 - **Sauvegardes** : sauvegardes quotidiennes Supabase (PITR selon l'offre). Le bucket `documents` est inclus dans le projet.
 - **Traitements quotidiens** : historique dans Paramètres › Page technique (« Traitements planifiés »), lancement manuel possible.

@@ -206,3 +206,18 @@ export async function deleteDocumentAction(form: FormData) {
   }
   redirect(`${str(form.get("back")) ?? "/comms/documents"}?ok=${q(`Document supprimé.`)}`);
 }
+
+/** Relève immédiate de la boîte connectée (les messages des contacts connus arrivent dans leur fil). */
+export async function syncInboxAction() {
+  const { ctx } = await guard("comms", "create");
+  const { syncInbox } = await import("@/lib/integrations/inbox");
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  try {
+    const r = await syncInbox(createAdminClient(), ctx.org.id);
+    if (!r.provider) redirect(`/comms?err=${q("Aucune boîte connectée (Paramètres › Intégrations).")}`);
+    redirect(`/comms?ok=${q(`Boîte relevée : ${r.stored} message(s) rangé(s)${r.ignored ? `, ${r.ignored} d'expéditeurs inconnus ignoré(s)` : ""}.`)}`);
+  } catch (e) {
+    if (e && typeof e === "object" && "digest" in e) throw e; // redirection Next.js
+    redirect(`/comms?err=${q(`Relève impossible : ${e instanceof Error ? e.message : "erreur"}`)}`);
+  }
+}

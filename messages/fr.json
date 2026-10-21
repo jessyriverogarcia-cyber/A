@@ -23,7 +23,10 @@
     "error": "Identifiants incorrects.",
     "mfaTitle": "Vérification en deux étapes",
     "mfaCode": "Code à 6 chiffres de votre application",
-    "mfaSubmit": "Vérifier"
+    "mfaSubmit": "Vérifier",
+    "noAccess": "Ce compte n'a pas accès à l'application.",
+    "noAccessHint": "La connexion a réussi, mais aucun profil ne lui est attribué. Demandez une invitation à la direction (Paramètres › Utilisateurs).",
+    "useAnotherAccount": "Se déconnecter et utiliser un autre compte"
   },
   "nav": {
     "map": "Map vivante",
@@ -42,7 +45,8 @@
     "me": "Mon espace",
     "notifications": "Notifications",
     "integrations": "Intégrations",
-    "planning": "Agenda"
+    "planning": "Agenda",
+    "users": "Utilisateurs"
   },
   "tech": {
     "title": "Page technique",

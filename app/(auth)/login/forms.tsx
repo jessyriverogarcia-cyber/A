@@ -7,7 +7,12 @@ import { Badge, Button, Input } from "@/components/ui/primitives";
 import { createClient } from "@/lib/supabase/client";
 import { sendMagicLink, signInWithPassword } from "./actions";
 
-export function LoginForm({ next, error }: { next: string; error?: string }) {
+const SSO: { id: "azure" | "google"; label: string }[] = [
+  { id: "azure", label: "Microsoft" },
+  { id: "google", label: "Google" },
+];
+
+export function LoginForm({ next, error, ssoProviders = [] }: { next: string; error?: string; ssoProviders?: string[] }) {
   const t = useTranslations("login");
   const [pwState, pwAction, pwPending] = useActionState(signInWithPassword, undefined);
   const [mlState, mlAction, mlPending] = useActionState(sendMagicLink, undefined);
@@ -25,7 +30,7 @@ export function LoginForm({ next, error }: { next: string; error?: string }) {
           <span>{t("password")}</span>
           <Input name="password" type="password" autoComplete="current-password" required />
         </label>
-        {(pwState?.error || error) && <p className="text-sm text-danger">{t("error")}</p>}
+        {(pwState?.error || (error && error !== "no_access")) && <p className="text-sm text-danger">{t("error")}</p>}
         <Button type="submit" className="w-full" disabled={pwPending}>
           {t("submit")}
         </Button>
@@ -50,14 +55,28 @@ export function LoginForm({ next, error }: { next: string; error?: string }) {
         <span className="h-px flex-1 bg-border" />
       </div>
       <div className="grid grid-cols-2 gap-2">
-        {["Microsoft", "Google"].map((p) => (
-          <Button key={p} variant="secondary" disabled title={t("ssoNotConfigured")} className="flex-col gap-0 py-1.5">
-            <span>{t("sso", { provider: p })}</span>
-            <Badge tone="warn" className="mt-0.5">
-              {t("ssoNotConfigured")}
-            </Badge>
-          </Button>
-        ))}
+        {SSO.map((p) =>
+          ssoProviders.includes(p.id) ? (
+            <Button
+              key={p.id}
+              variant="secondary"
+              data-testid={`sso-${p.id}`}
+              onClick={() =>
+                // Connexion déléguée à Supabase Auth ; seuls les comptes invités ont accès (profil requis).
+                createClient().auth.signInWithOAuth({ provider: p.id, options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`, scopes: p.id === "azure" ? "email" : undefined } })
+              }
+            >
+              {t("sso", { provider: p.label })}
+            </Button>
+          ) : (
+            <Button key={p.id} variant="secondary" disabled title={t("ssoNotConfigured")} className="flex-col gap-0 py-1.5" data-testid={`sso-${p.id}`}>
+              <span>{t("sso", { provider: p.label })}</span>
+              <Badge tone="warn" className="mt-0.5">
+                {t("ssoNotConfigured")}
+              </Badge>
+            </Button>
+          ),
+        )}
       </div>
     </div>
   );
