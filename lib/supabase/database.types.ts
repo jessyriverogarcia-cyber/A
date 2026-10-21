@@ -1500,7 +1500,21 @@ isOneToOne: false
                 }
           }
           Views: {
-            "presence_status": {
+            "audit_entries": {
+                  Row: {
+                    "action": string | null,"actor": string | null,"actor_name": string | null,"at": string | null,"id": number | null,"new_data": Json | null,"old_data": Json | null,"org_id": string | null,"row_id": string | null,"table_name": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "action"?: string | null,"actor"?: string | null,"actor_name"?: never,"at"?: string | null,"id"?: number | null,"new_data"?: Json | null,"old_data"?: Json | null,"org_id"?: string | null,"row_id"?: string | null,"table_name"?: string | null
+                         }
+                        Update: {
+                           "action"?: string | null,"actor"?: string | null,"actor_name"?: never,"at"?: string | null,"id"?: number | null,"new_data"?: Json | null,"old_data"?: Json | null,"org_id"?: string | null,"row_id"?: string | null,"table_name"?: string | null
+                         }
+                        Relationships: [
+                    
+                  ]
+                },"presence_status": {
                   Row: {
                     "current_activity": string | null,"employee_id": string | null,"org_id": string | null,"since": string | null,"status": string | null,"zone_id": string | null
                   }
@@ -1596,6 +1610,11 @@ isOneToOne: false
                            },
 "notify_employee":
 { Args: { "p_body": string,"p_employee": string,"p_link": string,"p_title": string }; Returns: number
+                           },
+"org_members":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "full_name": string,"user_id": string
+            }[]
                            },
 "receive_purchase_order":
 { Args: { "p_po": string }; Returns: Json

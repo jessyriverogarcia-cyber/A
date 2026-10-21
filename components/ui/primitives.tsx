@@ -3,9 +3,11 @@ import type { ButtonHTMLAttributes, HTMLAttributes } from "react";
 import { sectorConfig } from "@/config/sector.config";
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  // Pas de fusion de classes Tailwind : un padding explicite (p-0…) remplace celui par défaut.
+  const padded = /(^|\s)p-\d/.test(className ?? "");
   return (
     <div
-      className={clsx("rounded-card border border-border bg-surface p-5 shadow-[var(--shadow)]", className)}
+      className={clsx("rounded-card border border-border bg-surface shadow-[var(--shadow)]", !padded && "p-5", className)}
       {...props}
     />
   );

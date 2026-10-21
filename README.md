@@ -131,6 +131,19 @@ personnes et appareils viennent de la base et de la fiche secteur.
 
 L'envoi d'e-mails est **simulé** (badge « envoi simulé ») : le message est rangé dans le fil, rien ne part.
 
+## Tableau de bord (`/dashboard`) et Pilotage (`/pilotage`)
+
+- **Ma journée** (tous les rôles) : file « à faire aujourd'hui » limitée aux modules du rôle (messages à répondre,
+  devis à relancer, dossiers en retard, factures échues, stock bas, congés à valider…), mes tâches, notifications.
+- **Tableau de bord direction** : décisions à prendre triées par gravité (factures échues, pannes, retards,
+  dépassements d'heures, habilitations expirées), CA facturé 12 mois, encours et délai de paiement, trésorerie
+  prévisionnelle, pipeline pondéré, carnet de commandes, transformation et marge des devis, production, stock, équipe.
+  Tout est calculé à la volée (`lib/domain/pilotage.ts`, testé) ; chaque section n'apparaît que si le rôle lit le module.
+- **Journal d'audit** : écrit par des triggers PostgreSQL sur les tables sensibles (factures, paiements, devis,
+  affaires, dossiers, congés, pointages, salaires, droits, comptes…), avec auteur, date et avant → après ;
+  filtres, historique d'une fiche, export CSV. La RLS ne montre que les tables des modules lisibles par le rôle
+  (la production ne voit pas l'historique des factures, les salaires restent réservés).
+
 La **page technique** (`/settings/tech`) montre la session, la matrice de droits du rôle,
 le nombre de lignes visibles par table (RLS) et le flux `activity_events` en temps réel.
 
@@ -152,14 +165,14 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 - [x] Phase 0 — fiche secteur
 - [x] Phase 1 — socle : Next.js 15, Supabase, schéma, authentification (mot de passe, lien magique, TOTP), rôles, données de démo
 - [x] Phase 2 — Map vivante 3D : 2 sites, objets cliquables, fiches, animations, temps réel, scénario live, mode édition
-- [ ] Phase 3 — back-office module par module
+- [x] Phase 3 — back-office module par module
   - [x] Commercial : à faire aujourd'hui, pipeline kanban, clients 360°, devis (éditeur, marge, PDF, envoi et relance pré-remplis, acceptation → OF)
   - [x] Production : à faire aujourd'hui, tableau des OF par étape, fiche dossier (étapes, CQ, heures, tâches, checklist, traçabilité), planning machines
   - [x] Finance : à faire aujourd'hui, factures (depuis le dossier, acompte, avoir), envoi, paiements, relances graduées, PDF, trésorerie
   - [x] Ressources & stock : à faire aujourd'hui, stock et mouvements, réassort en un clic, commandes fournisseurs (envoi, réception), équipements et maintenance
   - [x] RH : mon espace (badgeuse, heures, congés), à faire aujourd'hui, équipe, présences, congés, recrutement, variables de paie
   - [x] Communication : boîte de réception unifiée, brouillons préparés, notes internes, documents, notifications
-  - [ ] Pilotage
+  - [x] Pilotage : ma journée, tableau de bord direction, journal d'audit
 - [ ] Phase 4 — intégrations, IA, finitions, déploiement
 
 **Mode simulé :** aucune intégration (Microsoft 365, Google Workspace, SSO, API Claude) n'est branchée.

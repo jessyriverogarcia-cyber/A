@@ -98,6 +98,7 @@ async function wipe() {
       if (files?.length) await bucket.remove(files.map((x) => `${org.id}/${f.name}/${x.name}`));
     }
   }
+  if (org) await db.from("audit_log").delete().eq("org_id", org.id); // pas de clé étrangère : l'audit survit à la ligne
   await db.from("orgs").delete().eq("slug", "strato-fab");
 }
 
@@ -685,6 +686,31 @@ async function main() {
     { client: "Valmy Turbines", label: "Étude de faisabilité aubes", ht: 3600, status: "paid", issued: -60 },
     { client: "Médicor Implants", label: "Série 2 implants", ht: 12900, status: "overdue", issued: -41 },
   ];
+  // Historique de facturation (soldé, 3 à 11 mois) pour les tendances du pilotage.
+  // Numérotation chronologique et par année, comme l'exige la loi (et next_document_number).
+  const historyClients = ["Héliance Aéro", "Garonne Robotique", "Valmy Turbines", "Ortho3D Santé", "Médicor Implants", "Soufflerie Atlantique", "Biscaye Drones"];
+  const issues: number[] = [];
+  for (let mo = 11; mo >= 3; mo--) for (let k = 0; k < int(2, 4); k++) issues.push(-(mo * 30 + int(0, 25)));
+  issues.sort((a, b) => a - b);
+  const seqByYear = new Map<number, number>();
+  const histInvoices: Row[] = issues.map((issue) => {
+    const ht = Math.round(between(9000, 68000) / 10) * 10;
+    const vat = computeVat(toCents(ht), c.vatRate, c.rounding);
+    const cl = client(pick(historyClients));
+    const y = Number(day(issue).slice(0, 4));
+    const seq = y === year ? ++invSeq : (seqByYear.get(y) ?? 0) + 1;
+    if (y !== year) seqByYear.set(y, seq);
+    return {
+      org_id, client_id: cl.id, kind: "invoice", contact_id: contacts.find((ct) => ct.client_id === cl.id && ct.is_primary)?.id ?? null,
+      number: formatDocumentNumber(cfg.crm.invoicePrefix, y, seq), status: "paid", issue_date: day(issue), due_date: day(issue + cfg.crm.paymentTermsDays), sent_at: iso(at(issue, 9)),
+      total_ht: ht, total_vat: fromCents(vat.vat), total_ttc: fromCents(vat.gross), paid_amount: fromCents(vat.gross),
+      _paid: day(issue + int(25, 45)),
+    };
+  });
+  const hist = await insert("invoices", histInvoices.map(({ _paid, ...r }) => r));
+  await insert("invoice_lines", hist.map((h) => ({ org_id, invoice_id: h.id, description: "Production de pièces — lot", quantity: 1, unit_price: h.total_ht, vat_rate: c.vatRate, position: 0 })));
+  await insert("payments", hist.map((h, i) => ({ org_id, invoice_id: h.id, amount: h.total_ttc, paid_on: histInvoices[i]._paid, method: "transfer" })));
+
   for (const inv of invoiceDefs) {
     const cl = client(inv.client);
     let ht = inv.ht;
@@ -895,6 +921,22 @@ async function main() {
   const { data: karimProfile } = await db.from("profiles").select("user_id").eq("org_id", org_id).eq("employee_id", emp("Karim").id).maybeSingle();
   if (karimProfile)
     await insert("notifications", [{ org_id, user_id: karimProfile.user_id, title: `${person("Nadia")} vous a écrit`, body: `${soufflerieWo.number} — écart de cote au contrôle`, link: `/comms/threads/${intTh.id}` }]);
+
+  // --- journal d'audit : l'import ci-dessus n'est pas une action d'utilisateur, on repart d'un
+  // journal vide, puis quelques vraies actions faites avec les comptes de démo (auteur réel, RLS appliquée).
+  await db.from("audit_log").delete().eq("org_id", org_id);
+  const asUser = async (login: string) => {
+    const u = createClient(url!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+    const { error } = await u.auth.signInWithPassword({ email: demoEmail(login), password: DEMO_PASSWORD });
+    if (error) throw new Error(`connexion ${login} : ${error.message}`);
+    return u;
+  };
+  const karim = await asUser("commercial");
+  await karim.from("deals").update({ next_step: "Relancer pour les fichiers CAO", next_step_on: day(1) }).eq("org_id", org_id).eq("title", "Brûleurs de turbine — série 2");
+  const marc = await asUser("compta");
+  await marc.from("invoices").update({ notes: "Relance téléphonique faite : règlement annoncé sous 8 jours." }).eq("org_id", org_id).eq("client_id", client("Soufflerie Atlantique").id).eq("status", "overdue");
+  const julien = await asUser("production");
+  await julien.from("work_orders").update({ priority: "urgent" }).eq("org_id", org_id).eq("id", soufflerieWo.id);
 
   console.log(`✔ Données de démo créées pour « ${c.name} » (org ${org_id})`);
   console.log(`  ${employees.length} employés · ${assets.length} ressources · ${clients.length} clients · ${wos!.length} OF · ${invSeq} factures`);

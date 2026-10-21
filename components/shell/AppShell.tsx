@@ -19,12 +19,12 @@ function navItems(): NavItem[] {
     hr: { key: "hr", href: "/hr", module: "hr" },
     comms: { key: "comms", href: "/comms", module: "comms" },
     ai: { key: "ai", href: "/ai", module: "ai", phase: 4 },
-    pilotage: { key: "pilotage", href: "/pilotage", module: "pilotage", phase: 3 },
+    pilotage: { key: "pilotage", href: "/pilotage", module: "pilotage" },
   };
   return [
     { key: "map", href: `/map/${sectorConfig.sites[0].id}`, module: "map" },
     { key: "me", href: "/me" },
-    { key: "dashboard", href: "/dashboard", phase: 3 },
+    { key: "dashboard", href: "/dashboard" },
     ...sectorConfig.modulesPriority.map((m) => moduleRoutes[m]).filter(Boolean),
     { key: "tech", href: "/settings/tech" },
     { key: "security", href: "/settings/security" },
