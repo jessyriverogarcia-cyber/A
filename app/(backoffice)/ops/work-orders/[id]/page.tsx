@@ -51,6 +51,11 @@ export default async function WorkOrderPage({ params, searchParams }: { params: 
   // Factures du dossier (vides si le rôle n'a pas accès à la Finance)
   const { data: invoices } = await db.from("invoices").select("id, number, kind, status, total_ttc").eq("work_order_id", id).order("number");
   const canInvoice = can(ctx, "finance", "create");
+  // Échanges et documents du dossier (vides sans accès à la Communication)
+  const [{ data: threads }, { data: docs }] = await Promise.all([
+    db.from("thread_overview").select("id, subject, channel, last_message_at, last_direction, drafts").eq("work_order_id", id).order("last_message_at", { ascending: false }),
+    db.from("documents").select("id, name").eq("entity_type", "work_order").eq("entity_id", id).order("created_at", { ascending: false }),
+  ]);
   const hasFinal = (invoices ?? []).some((i) => i.kind === "invoice" && i.status !== "cancelled");
 
   const write = can(ctx, "ops", "update");
@@ -279,6 +284,32 @@ export default async function WorkOrderPage({ params, searchParams }: { params: 
               <div className="flex justify-between"><dt className="text-muted">Échéance</dt><dd className={late ? "font-medium text-danger" : ""}>{wo.due_date ? formatDate(wo.due_date) : "—"}</dd></div>
             </dl>
           </Card>
+
+          {can(ctx, "comms") && (
+            <Card data-testid="wo-comms">
+              <CardTitle>Échanges et documents</CardTitle>
+              <ul className="space-y-1.5 text-sm">
+                {(threads ?? []).map((t) => (
+                  <li key={t.id} className="flex items-center justify-between gap-2">
+                    <Link href={`/comms/threads/${t.id}`} className="min-w-0 truncate hover:text-accent">{t.channel === "internal" ? "🔒 " : ""}{t.subject}</Link>
+                    {Number(t.drafts) > 0 ? <Badge tone="warn">brouillon</Badge> : t.last_direction === "in" ? <Badge tone="accent">à répondre</Badge> : null}
+                  </li>
+                ))}
+                {(docs ?? []).map((d) => (
+                  <li key={d.id}>
+                    <a href={`/comms/documents/${d.id}/download`} className="text-muted hover:text-accent">📄 {d.name}</a>
+                  </li>
+                ))}
+                {!threads?.length && !docs?.length && <li className="text-muted">Aucun échange.</li>}
+              </ul>
+              {can(ctx, "comms", "create") && (
+                <div className="mt-3 flex gap-3 border-t border-border pt-3 text-xs">
+                  {client && <Link href={`/comms/new?kind=client&wo=${wo.id}`} className="text-accent">Écrire au client →</Link>}
+                  <Link href={`/comms/new?kind=internal&wo=${wo.id}`} className="text-accent">Note à un collègue →</Link>
+                </div>
+              )}
+            </Card>
+          )}
 
           {(can(ctx, "finance") || canInvoice) && (
             <Card>

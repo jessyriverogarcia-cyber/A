@@ -164,11 +164,12 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
             <ul className="space-y-2 text-sm">
               {(c.threads ?? []).sort((a, b) => b.last_message_at.localeCompare(a.last_message_at)).slice(0, 6).map((t) => (
                 <li key={t.id}>
-                  <p className="truncate">{t.subject}</p>
+                  <Link href={`/comms/threads/${t.id}`} className="block truncate hover:text-accent">{t.subject}</Link>
                   <p className="text-xs text-muted">{t.channel} · {formatDate(t.last_message_at)}</p>
                 </li>
               ))}
               {!c.threads?.length && <li className="text-muted">Aucun échange.</li>}
+              <li><Link href={`/comms?f=all&q=${encodeURIComponent(c.name)}`} className="text-xs text-accent">Tous les échanges →</Link></li>
             </ul>
           </Card>
           <Card>

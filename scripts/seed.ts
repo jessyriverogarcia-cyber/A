@@ -10,6 +10,7 @@ import { computeVat, fromCents, toCents } from "../lib/domain/money";
 import { overallProgress } from "../lib/domain/workOrder";
 import { DEMO_DOMAIN, demoEmail } from "../lib/demo";
 import { packInZone } from "../lib/map/kits";
+import { suggestReply } from "../lib/domain/replies";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -47,6 +48,29 @@ const day = (offset: number) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 const year = now.getFullYear();
+const frDate = (iso: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(`${iso}T12:00:00Z`));
+/** PDF minimal valide (une page, un titre) pour les documents de démo. */
+const tinyPdf = (title: string) => {
+  const text = title.replace(/[()\\]/g, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const stream = `BT /F1 18 Tf 60 760 Td (${text}) Tj ET BT /F1 11 Tf 60 730 Td (Document de demonstration - donnees fictives) Tj ET`;
+  const objs = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+  ];
+  let out = "%PDF-1.4\n";
+  const offsets: number[] = [];
+  objs.forEach((o, i) => {
+    offsets.push(out.length);
+    out += `${i + 1} 0 obj\n${o}\nendobj\n`;
+  });
+  const xref = out.length;
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")}`;
+  out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return new Blob([out], { type: "application/pdf" });
+};
 
 // Le seed manipule des lignes non typées (pas de types générés à ce stade).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,6 +87,16 @@ async function wipe() {
   const { data: users } = await db.auth.admin.listUsers({ perPage: 200 });
   for (const u of users?.users ?? []) {
     if (u.email?.endsWith(`@${DEMO_DOMAIN}`)) await db.auth.admin.deleteUser(u.id);
+  }
+  const { data: org } = await db.from("orgs").select("id").eq("slug", "strato-fab").maybeSingle();
+  if (org) {
+    // Le stockage ne suit pas la cascade SQL : on vide le dossier de l'organisation.
+    const bucket = db.storage.from("documents");
+    const { data: folders } = await bucket.list(org.id, { limit: 1000 });
+    for (const f of folders ?? []) {
+      const { data: files } = await bucket.list(`${org.id}/${f.name}`, { limit: 1000 });
+      if (files?.length) await bucket.remove(files.map((x) => `${org.id}/${f.name}/${x.name}`));
+    }
   }
   await db.from("orgs").delete().eq("slug", "strato-fab");
 }
@@ -608,12 +642,27 @@ async function main() {
     if (machine && p.stage === "printing") {
       await insert("asset_bookings", [{ org_id, asset_id: machine.id, work_order_id: wo.id, starts_at: iso(at(-1, 6)), ends_at: iso(at(int(0, 3), int(9, 20))), booked_by: emp("Julien").id }]);
     }
-    await insert("threads", [{ org_id, subject: `${wo.number} — ${p.title}`, channel: "email", client_id: cl.id, work_order_id: wo.id, last_message_at: iso(at(-int(0, 3), int(8, 17))) }]).then(([th]) =>
-      insert("messages", [
-        { org_id, thread_id: th.id, direction: "in", author: p.client, body: "Bonjour, pouvez-vous nous confirmer la date de livraison ? Merci.", sent_at: th.last_message_at },
-        { org_id, thread_id: th.id, direction: "out", author: `${emp(p.owner).first_name} ${emp(p.owner).last_name}`, body: `Bonjour, la pièce est actuellement à l'étape « ${stages[stageIdx].label} ». Livraison prévue le ${day(p.due)}.`, ai_draft: true, sent_at: null },
-      ]),
-    );
+    // Fil client du dossier : question entrante + brouillon préparé (ou déjà répondu, lu).
+    const contact = contacts.find((ct) => ct.client_id === cl.id && ct.is_primary);
+    const owner = emp(p.owner);
+    const inbound = [
+      "Bonjour, pouvez-vous nous confirmer la date de livraison ? Merci.",
+      "Bonjour, pourriez-vous nous transmettre le certificat matière et la traçabilité du lot ?",
+      "Bonjour, où en est l'avancement ? Nous devons caler nos essais.",
+    ][pi % 3];
+    const answered = pi % 4 === 3;
+    const inAt = at(-int(0, 3), int(8, 16), int(0, 59));
+    const draft = suggestReply(inbound, {
+      companyName: c.name,
+      senderName: `${owner.first_name} ${owner.last_name}`,
+      contactFirstName: contact?.first_name as string | undefined,
+      workOrder: { number: wo.number, stageLabel: stages[stageIdx].label, dueDate: frDate(day(p.due)), late: p.due < 0, progress: wo.progress },
+    });
+    const [th] = await insert("threads", [{ org_id, subject: `${wo.number} — ${p.title}`, channel: "email", client_id: cl.id, work_order_id: wo.id, assigned_employee: owner.id, last_message_at: iso(answered ? new Date(inAt.getTime() + 40 * 60_000) : inAt), read_at: answered ? iso(new Date(inAt.getTime() + 30 * 60_000)) : null }]);
+    await insert("messages", [
+      { org_id, thread_id: th.id, direction: "in", author: contact ? `${contact.first_name} ${contact.last_name} (${p.client})` : p.client, body: inbound, sent_at: iso(inAt) },
+      { org_id, thread_id: th.id, direction: "out", author: `${owner.first_name} ${owner.last_name}`, body: draft.body, ai_draft: !answered, sent_at: answered ? iso(new Date(inAt.getTime() + 40 * 60_000)) : null },
+    ]);
   }
 
   // Affaires en amont (pas encore de devis) pour remplir le haut du pipeline
@@ -690,6 +739,47 @@ async function main() {
     { org_id, supplier_id: sup("powder_metal"), number: `CMD-${year}-0031`, status: "sent", sent_at: iso(at(-4, 10)), total: 7200, expected_on: day(9), lines: [poLine("POW-ALSI", 60)] },
   ]);
   await insert("stock_movements", stock.slice(0, 10).map((s, i) => ({ org_id, stock_item_id: s.id, delta: -int(1, 8), reason: "consommation OF", at: iso(at(-(i % 4), 9 + i)) })));
+
+  // --- communication : fils hors dossier (facture, fournisseur, demande de devis, note interne) ---
+  const person = (first: string) => `${emp(first).first_name} ${emp(first).last_name}`;
+  const contactOf = (name: string) => contacts.find((ct) => ct.client_id === client(name).id && ct.is_primary)!;
+  const { data: medInv } = await db.from("invoices").select("id, number, due_date, total_ttc, paid_amount").eq("org_id", org_id).eq("client_id", client("Médicor Implants").id).eq("status", "overdue").single();
+  const medContact = contactOf("Médicor Implants");
+  const invQuestion = `Bonjour, notre service comptable ne retrouve pas la facture ${medInv!.number}. Pouvez-vous nous la renvoyer ?`;
+  const biscContact = contactOf("Biscaye Drones");
+  const quoteQuestion = "Bonjour, pourriez-vous nous faire un devis pour 200 coques de drone en PA12, livrables en janvier ?";
+  const soufflerieWo = wos!.find((w) => w.client_id === client("Soufflerie Atlantique").id && w.status === "active")!;
+  const [invTh, supTh, quoteTh, intTh] = await insert("threads", [
+    { org_id, subject: `Facture ${medInv!.number}`, channel: "email", client_id: client("Médicor Implants").id, assigned_employee: emp("Marc").id, last_message_at: iso(at(0, 8, 12)) },
+    { org_id, subject: `Commande CMD-${year}-0031 — poudre AlSi10Mg`, channel: "email", supplier_id: sup("powder_metal"), assigned_employee: emp("Julien").id, last_message_at: iso(at(-1, 15, 40)) },
+    { org_id, subject: "Demande de devis — coques de drone série 200", channel: "email", client_id: client("Biscaye Drones").id, assigned_employee: emp("Karim").id, last_message_at: iso(at(0, 7, 55)) },
+    { org_id, subject: `${soufflerieWo.number} — écart de cote au contrôle`, channel: "internal", work_order_id: soufflerieWo.id, client_id: soufflerieWo.client_id, created_by_employee: emp("Nadia").id, assigned_employee: emp("Karim").id, last_message_at: iso(at(0, 9, 5)) },
+  ]);
+  const signed = (first: string, inbound: string, extra: Partial<Parameters<typeof suggestReply>[1]>) => suggestReply(inbound, { ...extra, companyName: c.name, senderName: person(first) }).body;
+  await insert("messages", [
+    { org_id, thread_id: invTh.id, direction: "in", author: `${medContact.first_name} ${medContact.last_name} (Médicor Implants)`, body: invQuestion, sent_at: invTh.last_message_at },
+    { org_id, thread_id: invTh.id, direction: "out", author: person("Marc"), ai_draft: true, sent_at: null, body: signed("Marc", invQuestion, { contactFirstName: medContact.first_name as string, invoice: { number: medInv!.number, paid: false, dueDate: frDate(medInv!.due_date), balance: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(Number(medInv!.total_ttc) - Number(medInv!.paid_amount)), overdue: true } }) },
+    { org_id, thread_id: supTh.id, direction: "out", author: person("Julien"), body: `Bonjour, pouvez-vous nous confirmer la date d'expédition de la commande CMD-${year}-0031 ?`, sent_at: iso(at(-2, 10, 5)) },
+    { org_id, thread_id: supTh.id, direction: "in", author: "Service commandes (MétalAtome)", body: "Bonjour, nous pouvons avancer la livraison de 3 jours si vous acceptez une livraison en deux palettes. Merci de nous confirmer.", sent_at: supTh.last_message_at },
+    { org_id, thread_id: quoteTh.id, direction: "in", author: `${biscContact.first_name} ${biscContact.last_name} (Biscaye Drones)`, body: quoteQuestion, sent_at: quoteTh.last_message_at },
+    { org_id, thread_id: quoteTh.id, direction: "out", author: person("Karim"), ai_draft: true, sent_at: null, body: signed("Karim", quoteQuestion, { contactFirstName: biscContact.first_name as string }) },
+    { org_id, thread_id: intTh.id, direction: "internal", author: person("Nadia"), body: `Karim, au contrôle de la ${soufflerieWo.title.toLowerCase()}, le bord d'attaque sort à +0,3 mm. On relance une impression (2 jours) : peux-tu prévenir le client du décalage ?`, sent_at: intTh.last_message_at },
+  ]);
+
+  // Documents de démo (stockage privé, dossier de l'organisation)
+  const docDefs = [
+    { name: `Plan CAO rev B — ${soufflerieWo.number}.pdf`, entity_type: "work_order", entity_id: soufflerieWo.id, by: "Nadia" },
+    { name: "Certificat matière — lot Ti6Al4V 2610.pdf", entity_type: "work_order", entity_id: wos!.find((w) => w.title.startsWith("Aubes"))!.id, by: "Tom" },
+    { name: "Conditions générales d'achat — Héliance Aéro.pdf", entity_type: "client", entity_id: client("Héliance Aéro").id, by: "Karim" },
+    { name: "Fiche de données de sécurité — poudre AlSi10Mg.pdf", entity_type: "supplier", entity_id: sup("powder_metal"), by: "Julien" },
+  ];
+  for (const [i, d] of docDefs.entries()) {
+    const blob = tinyPdf(d.name.replace(/\.pdf$/, ""));
+    const path = `${org_id}/${d.entity_type}/seed-${i}.pdf`;
+    const { error } = await db.storage.from("documents").upload(path, blob, { contentType: "application/pdf", upsert: true });
+    if (error) throw new Error(`storage : ${error.message}`);
+    await insert("documents", [{ org_id, entity_type: d.entity_type, entity_id: d.entity_id, name: d.name, storage_path: path, mime: "application/pdf", size_bytes: blob.size, uploaded_by: person(d.by), created_at: iso(at(-i - 1, 11)) }]);
+  }
 
   // --- présence du jour ------------------------------------------------
   const badgeRows: Row[] = [];
@@ -802,6 +892,9 @@ async function main() {
       { org_id, user_id: pr.user_id, title: "OF urgent à expédier aujourd'hui", body: "Hydravion HV-1 — essais de largage.", link: "/ops/work-orders" },
     ]),
   );
+  const { data: karimProfile } = await db.from("profiles").select("user_id").eq("org_id", org_id).eq("employee_id", emp("Karim").id).maybeSingle();
+  if (karimProfile)
+    await insert("notifications", [{ org_id, user_id: karimProfile.user_id, title: `${person("Nadia")} vous a écrit`, body: `${soufflerieWo.number} — écart de cote au contrôle`, link: `/comms/threads/${intTh.id}` }]);
 
   console.log(`✔ Données de démo créées pour « ${c.name} » (org ${org_id})`);
   console.log(`  ${employees.length} employés · ${assets.length} ressources · ${clients.length} clients · ${wos!.length} OF · ${invSeq} factures`);

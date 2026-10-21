@@ -9,6 +9,8 @@ export interface OutgoingMail {
   clientId?: string | null;
   supplierId?: string | null;
   workOrderId?: string | null;
+  /** Réponse dans un fil existant (sinon le fil est retrouvé par sujet + client/fournisseur). */
+  threadId?: string | null;
   author: string;
   attachments?: { name: string; url: string }[];
 }
@@ -41,6 +43,7 @@ export class MockMailProvider implements MailProvider {
 
   async send(mail: OutgoingMail): Promise<MailResult> {
     const now = new Date().toISOString();
+    if (mail.threadId) return this.store(mail.threadId, mail, now);
     let find = this.db.from("threads").select("id").eq("subject", mail.subject.replace(/^Relance — /, ""));
     find = mail.clientId ? find.eq("client_id", mail.clientId) : find.eq("supplier_id", mail.supplierId ?? "00000000-0000-0000-0000-000000000000");
     const { data: existing } = await find.limit(1).maybeSingle();
@@ -53,9 +56,13 @@ export class MockMailProvider implements MailProvider {
         .single();
       if (error) return { ok: false, simulated: true, reason: error.message };
       threadId = data.id;
-    } else {
-      await this.db.from("threads").update({ last_message_at: now }).eq("id", threadId);
     }
+    return this.store(threadId, mail, now);
+  }
+
+  private async store(threadId: string, mail: OutgoingMail, now: string): Promise<MailResult> {
+    // Répondre clôt le « à répondre » du fil.
+    await this.db.from("threads").update({ last_message_at: now, read_at: now }).eq("id", threadId);
     const attach = mail.attachments?.length ? `\n\n[Pièces jointes : ${mail.attachments.map((a) => a.name).join(", ")}]` : "";
     const { error } = await this.db.from("messages").insert({
       org_id: this.orgId,

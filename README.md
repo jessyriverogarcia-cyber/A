@@ -114,6 +114,23 @@ personnes et appareils viennent de la base et de la fiche secteur.
 - **Variables de paie** : base mensuelle, heures, heures sup., absences par type ; export CSV pour le cabinet.
   Le bulletin (cotisations, net) reste produit par le logiciel de paie.
 
+## Back-office — Communication (`/comms`) et notifications
+
+- **Boîte de réception unifiée** : tous les fils (clients, fournisseurs, notes internes) rangés par interlocuteur et
+  par dossier ; filtres « à répondre », « brouillons à relire », « mes échanges », recherche.
+- **Brouillons préparés** : à l'arrivée d'un message, une réponse est rédigée à partir du dossier lié (étape et
+  échéance de l'OF, solde de la facture, état du devis). On relit, on envoie en un clic. Règles explicites
+  (`lib/domain/replies.ts`) en attendant l'assistant IA de la phase 4.
+- **Fil** : historique, panneau dossier (client, OF, facture, devis), responsable du fil, pièces jointes du dossier,
+  « classer sans réponse ». En mode simulé, « Simuler une réponse de l'interlocuteur » fait arriver un message
+  (la Map l'affiche, le responsable est notifié).
+- **Notes internes** à un collègue sur un dossier : notification au destinataire, puis à l'auteur quand il répond.
+- **Documents** : dépôt dans un stockage privé (dossier par organisation, RLS du bucket), rattachés à un client, un
+  dossier ou un fournisseur, versions, téléchargement par lien signé de 60 s ; devis et factures PDF générés à la demande.
+- **Notifications** (cloche, tous les rôles) : messages internes, échanges confiés, décisions de congé.
+
+L'envoi d'e-mails est **simulé** (badge « envoi simulé ») : le message est rangé dans le fil, rien ne part.
+
 La **page technique** (`/settings/tech`) montre la session, la matrice de droits du rôle,
 le nombre de lignes visibles par table (RLS) et le flux `activity_events` en temps réel.
 
@@ -141,7 +158,8 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
   - [x] Finance : à faire aujourd'hui, factures (depuis le dossier, acompte, avoir), envoi, paiements, relances graduées, PDF, trésorerie
   - [x] Ressources & stock : à faire aujourd'hui, stock et mouvements, réassort en un clic, commandes fournisseurs (envoi, réception), équipements et maintenance
   - [x] RH : mon espace (badgeuse, heures, congés), à faire aujourd'hui, équipe, présences, congés, recrutement, variables de paie
-  - [ ] Communication · Pilotage
+  - [x] Communication : boîte de réception unifiée, brouillons préparés, notes internes, documents, notifications
+  - [ ] Pilotage
 - [ ] Phase 4 — intégrations, IA, finitions, déploiement
 
 **Mode simulé :** aucune intégration (Microsoft 365, Google Workspace, SSO, API Claude) n'est branchée.

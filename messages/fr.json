@@ -39,7 +39,8 @@
     "settings": "Paramètres",
     "tech": "Page technique",
     "security": "Sécurité du compte",
-    "me": "Mon espace"
+    "me": "Mon espace",
+    "notifications": "Notifications"
   },
   "tech": {
     "title": "Page technique",

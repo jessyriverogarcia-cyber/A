@@ -35,6 +35,8 @@ export function eventLabel(type: string) {
       "leave.approved": "Congé validé",
       "leave.rejected": "Congé refusé",
       "candidate.hired": "Recrutement",
+      "message.received": "Nouveau message",
+      "message.sent": "Réponse envoyée",
     } as Record<string, string>
   )[type] ?? type;
 }

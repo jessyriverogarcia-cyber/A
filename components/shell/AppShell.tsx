@@ -5,6 +5,7 @@ import { Badge, Logo } from "@/components/ui/primitives";
 import { can, type UserContext } from "@/lib/auth";
 import type { Module } from "@/lib/domain/permissions";
 import { signOut } from "@/app/(auth)/login/actions";
+import { createClient } from "@/lib/supabase/server";
 
 type NavItem = { key: string; href: string; module?: Module; phase?: number };
 
@@ -16,7 +17,7 @@ function navItems(): NavItem[] {
     finance: { key: "finance", href: "/finance", module: "finance" },
     resources: { key: "resources", href: "/resources", module: "resources" },
     hr: { key: "hr", href: "/hr", module: "hr" },
-    comms: { key: "comms", href: "/comms", module: "comms", phase: 3 },
+    comms: { key: "comms", href: "/comms", module: "comms" },
     ai: { key: "ai", href: "/ai", module: "ai", phase: 4 },
     pilotage: { key: "pilotage", href: "/pilotage", module: "pilotage", phase: 3 },
   };
@@ -34,6 +35,8 @@ export async function AppShell({ ctx, children }: { ctx: UserContext; children: 
   const t = await getTranslations();
   const items = navItems().filter((i) => !i.module || can(ctx, i.module));
   const simulated = sectorConfig.integrations.mode === "simulated";
+  const db = await createClient();
+  const { count: unread } = await db.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", ctx.user_id).is("read_at", null);
 
   return (
     <div className="flex min-h-screen">
@@ -41,6 +44,17 @@ export async function AppShell({ ctx, children }: { ctx: UserContext; children: 
         <div className="flex items-center gap-2.5 px-4 py-4">
           <Logo size={32} />
           <span className="font-semibold">{sectorConfig.company.name}</span>
+          <Link href="/notifications" className="relative ml-auto rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-text" aria-label={t("nav.notifications")} data-testid="bell">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+            </svg>
+            {!!unread && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] font-semibold leading-4 text-white" data-testid="bell-count">
+                {unread}
+              </span>
+            )}
+          </Link>
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-2">
           {items.map((i) => (

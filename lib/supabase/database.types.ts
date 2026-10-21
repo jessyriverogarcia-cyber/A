@@ -387,14 +387,14 @@ isOneToOne: false
                   ]
                 },"documents": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"entity_id": string | null,"entity_type": string | null,"id": string,"mime": string | null,"name": string,"org_id": string,"storage_path": string,"updated_at": string,"version": number
+                    "created_at": string,"created_by": string | null,"entity_id": string | null,"entity_type": string | null,"id": string,"mime": string | null,"name": string,"org_id": string,"size_bytes": number | null,"storage_path": string,"updated_at": string,"uploaded_by": string | null,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"entity_id"?: string | null,"entity_type"?: string | null,"id"?: string,"mime"?: string | null,"name": string,"org_id": string,"storage_path": string,"updated_at"?: string,"version"?: number
+                    "created_at"?: string,"created_by"?: string | null,"entity_id"?: string | null,"entity_type"?: string | null,"id"?: string,"mime"?: string | null,"name": string,"org_id": string,"size_bytes"?: number | null,"storage_path": string,"updated_at"?: string,"uploaded_by"?: string | null,"version"?: number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"entity_id"?: string | null,"entity_type"?: string | null,"id"?: string,"mime"?: string | null,"name"?: string,"org_id"?: string,"storage_path"?: string,"updated_at"?: string,"version"?: number
+                    "created_at"?: string,"created_by"?: string | null,"entity_id"?: string | null,"entity_type"?: string | null,"id"?: string,"mime"?: string | null,"name"?: string,"org_id"?: string,"size_bytes"?: number | null,"storage_path"?: string,"updated_at"?: string,"uploaded_by"?: string | null,"version"?: number
                   }
                   Relationships: [
                     {
@@ -766,6 +766,12 @@ isOneToOne: false
       columns: ["org_id"]
 isOneToOne: false
       referencedRelation: "orgs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "messages_thread_id_fkey"
+      columns: ["thread_id"]
+isOneToOne: false
+      referencedRelation: "thread_overview"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "messages_thread_id_fkey"
@@ -1235,22 +1241,46 @@ isOneToOne: false
                   ]
                 },"threads": {
                   Row: {
-                    "channel": string,"client_id": string | null,"created_at": string,"created_by": string | null,"id": string,"last_message_at": string,"org_id": string,"subject": string,"supplier_id": string | null,"updated_at": string,"work_order_id": string | null
+                    "assigned_employee": string | null,"channel": string,"client_id": string | null,"created_at": string,"created_by": string | null,"created_by_employee": string | null,"id": string,"last_message_at": string,"org_id": string,"read_at": string | null,"subject": string,"supplier_id": string | null,"updated_at": string,"work_order_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "channel": string,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"last_message_at"?: string,"org_id": string,"subject": string,"supplier_id"?: string | null,"updated_at"?: string,"work_order_id"?: string | null
+                    "assigned_employee"?: string | null,"channel": string,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"created_by_employee"?: string | null,"id"?: string,"last_message_at"?: string,"org_id": string,"read_at"?: string | null,"subject": string,"supplier_id"?: string | null,"updated_at"?: string,"work_order_id"?: string | null
                   }
                   Update: {
-                    "channel"?: string,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"last_message_at"?: string,"org_id"?: string,"subject"?: string,"supplier_id"?: string | null,"updated_at"?: string,"work_order_id"?: string | null
+                    "assigned_employee"?: string | null,"channel"?: string,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"created_by_employee"?: string | null,"id"?: string,"last_message_at"?: string,"org_id"?: string,"read_at"?: string | null,"subject"?: string,"supplier_id"?: string | null,"updated_at"?: string,"work_order_id"?: string | null
                   }
                   Relationships: [
                     {
+      foreignKeyName: "threads_assigned_employee_fkey"
+      columns: ["assigned_employee"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "threads_assigned_employee_fkey"
+      columns: ["assigned_employee"]
+isOneToOne: false
+      referencedRelation: "presence_status"
+      referencedColumns: ["employee_id"]
+    },{
       foreignKeyName: "threads_client_id_fkey"
       columns: ["client_id"]
 isOneToOne: false
       referencedRelation: "clients"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "threads_created_by_employee_fkey"
+      columns: ["created_by_employee"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "threads_created_by_employee_fkey"
+      columns: ["created_by_employee"]
+isOneToOne: false
+      referencedRelation: "presence_status"
+      referencedColumns: ["employee_id"]
     },{
       foreignKeyName: "threads_org_id_fkey"
       columns: ["org_id"]
@@ -1490,6 +1520,68 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"thread_overview": {
+                  Row: {
+                    "assigned_employee": string | null,"channel": string | null,"client_id": string | null,"created_by_employee": string | null,"drafts": number | null,"id": string | null,"last_body": string | null,"last_direction": string | null,"last_inbound_at": string | null,"last_message_at": string | null,"org_id": string | null,"read_at": string | null,"subject": string | null,"supplier_id": string | null,"work_order_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "assigned_employee"?: string | null,"channel"?: string | null,"client_id"?: string | null,"created_by_employee"?: string | null,"drafts"?: never,"id"?: string | null,"last_body"?: never,"last_direction"?: never,"last_inbound_at"?: never,"last_message_at"?: string | null,"org_id"?: string | null,"read_at"?: string | null,"subject"?: string | null,"supplier_id"?: string | null,"work_order_id"?: string | null
+                         }
+                        Update: {
+                           "assigned_employee"?: string | null,"channel"?: string | null,"client_id"?: string | null,"created_by_employee"?: string | null,"drafts"?: never,"id"?: string | null,"last_body"?: never,"last_direction"?: never,"last_inbound_at"?: never,"last_message_at"?: string | null,"org_id"?: string | null,"read_at"?: string | null,"subject"?: string | null,"supplier_id"?: string | null,"work_order_id"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "threads_assigned_employee_fkey"
+      columns: ["assigned_employee"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "threads_assigned_employee_fkey"
+      columns: ["assigned_employee"]
+isOneToOne: false
+      referencedRelation: "presence_status"
+      referencedColumns: ["employee_id"]
+    },{
+      foreignKeyName: "threads_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "threads_created_by_employee_fkey"
+      columns: ["created_by_employee"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "threads_created_by_employee_fkey"
+      columns: ["created_by_employee"]
+isOneToOne: false
+      referencedRelation: "presence_status"
+      referencedColumns: ["employee_id"]
+    },{
+      foreignKeyName: "threads_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "orgs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "threads_supplier_id_fkey"
+      columns: ["supplier_id"]
+isOneToOne: false
+      referencedRelation: "suppliers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "threads_work_order_id_fkey"
+      columns: ["work_order_id"]
+isOneToOne: false
+      referencedRelation: "work_orders"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Functions: {
@@ -1501,6 +1593,9 @@ isOneToOne: false
                            },
 "next_document_number":
 { Args: { "p_prefix": string,"p_table": string }; Returns: string
+                           },
+"notify_employee":
+{ Args: { "p_body": string,"p_employee": string,"p_link": string,"p_title": string }; Returns: number
                            },
 "receive_purchase_order":
 { Args: { "p_po": string }; Returns: Json
