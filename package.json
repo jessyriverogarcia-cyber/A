@@ -15,9 +15,11 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset && pnpm db:seed",
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
+    "db:types": "supabase gen types typescript --local > lib/supabase/database.types.tmp && mv lib/supabase/database.types.tmp lib/supabase/database.types.ts",
     "check:config": "tsx -e \"import('./config/sector.config.ts').then(m => console.log('OK —', m.sectorConfig.company.name, '·', m.sectorConfig.sites.length, 'sites ·', m.sectorConfig.workOrder.stages.length, 'étapes'))\""
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.0.0",
     "@react-pdf/renderer": "^4.9.0",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",

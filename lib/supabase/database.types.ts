@@ -43,6 +43,52 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"ai_conversations": {
+                  Row: {
+                    "created_at": string,"id": string,"org_id": string,"title": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"org_id": string,"title"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"org_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "ai_conversations_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "orgs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"ai_messages": {
+                  Row: {
+                    "content": NonNullable<Json>,"conversation_id": string,"created_at": string,"id": number,"input_tokens": number | null,"model": string | null,"org_id": string,"output_tokens": number | null,"role": string,"simulated": boolean,"text": string | null,"tools": (string)[]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "content": NonNullable<Json>,"conversation_id": string,"created_at"?: string,"id"?: never,"input_tokens"?: number | null,"model"?: string | null,"org_id": string,"output_tokens"?: number | null,"role": string,"simulated"?: boolean,"text"?: string | null,"tools"?: (string)[]
+                  }
+                  Update: {
+                    "content"?: NonNullable<Json>,"conversation_id"?: string,"created_at"?: string,"id"?: never,"input_tokens"?: number | null,"model"?: string | null,"org_id"?: string,"output_tokens"?: number | null,"role"?: string,"simulated"?: boolean,"text"?: string | null,"tools"?: (string)[]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "ai_messages_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "ai_conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "ai_messages_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "orgs"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"asset_bookings": {
                   Row: {
                     "asset_id": string,"booked_by": string | null,"created_at": string,"created_by": string | null,"ends_at": string,"id": string,"org_id": string,"starts_at": string,"updated_at": string,"work_order_id": string | null

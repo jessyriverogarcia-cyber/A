@@ -18,7 +18,7 @@ function navItems(): NavItem[] {
     resources: { key: "resources", href: "/resources", module: "resources" },
     hr: { key: "hr", href: "/hr", module: "hr" },
     comms: { key: "comms", href: "/comms", module: "comms" },
-    ai: { key: "ai", href: "/ai", module: "ai", phase: 4 },
+    ai: { key: "ai", href: "/ai", module: "ai" },
     pilotage: { key: "pilotage", href: "/pilotage", module: "pilotage" },
   };
   return [
