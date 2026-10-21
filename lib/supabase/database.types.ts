@@ -213,17 +213,23 @@ isOneToOne: false
                   ]
                 },"calendar_events": {
                   Row: {
-                    "asset_id": string | null,"client_id": string | null,"created_at": string,"created_by": string | null,"ends_at": string,"external_id": string | null,"external_source": string | null,"id": string,"kind": string,"org_id": string,"owner_employee_id": string | null,"participants": (string)[],"room_asset_id": string | null,"starts_at": string,"title": string,"updated_at": string
+                    "asset_id": string | null,"client_id": string | null,"created_at": string,"created_by": string | null,"ends_at": string,"external_id": string | null,"external_source": string | null,"id": string,"kind": string,"leave_request_id": string | null,"location": string | null,"notes": string | null,"org_id": string,"owner_employee_id": string | null,"participants": (string)[],"room_asset_id": string | null,"starts_at": string,"synced_at": string | null,"title": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "asset_id"?: string | null,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"ends_at": string,"external_id"?: string | null,"external_source"?: string | null,"id"?: string,"kind": string,"org_id": string,"owner_employee_id"?: string | null,"participants"?: (string)[],"room_asset_id"?: string | null,"starts_at": string,"title": string,"updated_at"?: string
+                    "asset_id"?: string | null,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"ends_at": string,"external_id"?: string | null,"external_source"?: string | null,"id"?: string,"kind": string,"leave_request_id"?: string | null,"location"?: string | null,"notes"?: string | null,"org_id": string,"owner_employee_id"?: string | null,"participants"?: (string)[],"room_asset_id"?: string | null,"starts_at": string,"synced_at"?: string | null,"title": string,"updated_at"?: string
                   }
                   Update: {
-                    "asset_id"?: string | null,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"ends_at"?: string,"external_id"?: string | null,"external_source"?: string | null,"id"?: string,"kind"?: string,"org_id"?: string,"owner_employee_id"?: string | null,"participants"?: (string)[],"room_asset_id"?: string | null,"starts_at"?: string,"title"?: string,"updated_at"?: string
+                    "asset_id"?: string | null,"client_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"ends_at"?: string,"external_id"?: string | null,"external_source"?: string | null,"id"?: string,"kind"?: string,"leave_request_id"?: string | null,"location"?: string | null,"notes"?: string | null,"org_id"?: string,"owner_employee_id"?: string | null,"participants"?: (string)[],"room_asset_id"?: string | null,"starts_at"?: string,"synced_at"?: string | null,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "calendar_events_leave_request_id_fkey"
+      columns: ["leave_request_id"]
+isOneToOne: false
+      referencedRelation: "leave_requests"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "calendar_events_org_id_fkey"
       columns: ["org_id"]
 isOneToOne: false
@@ -241,6 +247,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "presence_status"
       referencedColumns: ["employee_id"]
+    }
+                  ]
+                },"calendar_feeds": {
+                  Row: {
+                    "created_at": string,"last_read_at": string | null,"org_id": string,"token_hash": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"last_read_at"?: string | null,"org_id": string,"token_hash": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"last_read_at"?: string | null,"org_id"?: string,"token_hash"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "calendar_feeds_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "orgs"
+      referencedColumns: ["id"]
     }
                   ]
                 },"candidates": {
@@ -1725,6 +1751,9 @@ isOneToOne: false
           Functions: {
             "accept_quote":
 { Args: { "p_progress": number,"p_quote": string,"p_site_key": string,"p_stage": string,"p_technology": string,"p_wo_prefix": string,"p_zone_key": string }; Returns: Json
+                           },
+"calendar_feed":
+{ Args: { "p_token": string }; Returns: Json
                            },
 "integration_secret":
 { Args: { "p_provider": string }; Returns: string

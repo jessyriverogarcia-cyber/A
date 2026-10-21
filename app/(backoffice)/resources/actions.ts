@@ -8,6 +8,8 @@ import { addDays } from "@/lib/domain/stock";
 import { todayIso } from "@/lib/domain/kpis";
 import { sectorConfig } from "@/config/sector.config";
 import { getMailProvider } from "@/lib/integrations/mail";
+import { pushSharedEvent } from "@/lib/integrations/calendar";
+import { zonedToIso } from "@/lib/domain/hr";
 import { createReorders, poTotal, type PoLine } from "@/lib/services/resources";
 import { createClient } from "@/lib/supabase/server";
 
@@ -156,7 +158,10 @@ export async function scheduleMaintenanceAction(form: FormData) {
   if (!date) redirect(`/resources/equipment/${id}?err=${q("Date requise.")}`);
   const { data: a } = await db.from("assets").select("code, name").eq("id", id).single();
   await db.from("assets").update({ next_maintenance_on: date }).eq("id", id);
-  await db.from("calendar_events").insert({ org_id: ctx.org.id, asset_id: id, kind: "maintenance", title: `Maintenance ${a?.code ?? ""}`, starts_at: new Date(`${date}T07:00:00`).toISOString(), ends_at: new Date(`${date}T12:00:00`).toISOString() });
+  const tz = sectorConfig.company.timezone;
+  const ev = { title: `Maintenance ${a?.code ?? ""} — ${a?.name ?? ""}`, start: zonedToIso(date, "07:00", tz), end: zonedToIso(date, "12:00", tz) };
+  const pushed = await pushSharedEvent(db, ev, tz);
+  await db.from("calendar_events").insert({ org_id: ctx.org.id, asset_id: id, kind: "maintenance", title: ev.title, starts_at: ev.start, ends_at: ev.end, external_source: pushed?.provider ?? null, external_id: pushed?.id ?? null, synced_at: pushed ? new Date().toISOString() : null });
   redirect(`/resources/equipment/${id}?ok=${q("Maintenance planifiée et ajoutée au planning.")}`);
 }
 

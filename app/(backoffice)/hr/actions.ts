@@ -6,6 +6,7 @@ import type { Action, Module } from "@/lib/domain/permissions";
 import { businessDays, rttBalance, zonedToIso } from "@/lib/domain/hr";
 import { sectorConfig } from "@/config/sector.config";
 import { createClient } from "@/lib/supabase/server";
+import { pushSharedEvent } from "@/lib/integrations/calendar";
 
 const q = (m: string) => encodeURIComponent(m);
 const str = (v: FormDataEntryValue | null) => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -65,11 +66,13 @@ export async function decideLeaveAction(form: FormData) {
     .update({ status: approve ? "approved" : "rejected", approver_id: ctx.employee_id, decided_at: new Date().toISOString(), rejection_reason: approve ? null : (str(form.get("reason")) ?? "Contrainte de planning") })
     .eq("id", id)
     .eq("status", "pending")
-    .select("days, employee_id, starts_on, employees:employees!leave_requests_employee_id_fkey(first_name, last_name)")
+    .select("days, employee_id, starts_on, ends_on, employees:employees!leave_requests_employee_id_fkey(first_name, last_name)")
     .single();
   if (error || !lr) redirect(`${back}?err=${q("Demande introuvable ou déjà traitée.")}`);
   const e = lr.employees as unknown as { first_name: string; last_name: string };
   await db.from("activity_events").insert({ org_id: ctx.org.id, type: approve ? "leave.approved" : "leave.rejected", entity_type: "leave_request", entity_id: id, actor: ctx.user_id, payload: { name: `${e.first_name} ${e.last_name}`, days: lr.days } });
+  // Agenda d'équipe de la boîte connectée (Outlook / Google), s'il y en a une
+  if (approve) await pushSharedEvent(db, { title: `Absence — ${e.first_name} ${e.last_name}`, start: lr.starts_on, end: lr.ends_on, allDay: true }, sectorConfig.company.timezone);
   await db.rpc("notify_employee", { p_employee: lr.employee_id, p_title: `Votre demande de congé est ${approve ? "validée" : "refusée"}`, p_body: `${lr.days} jour(s) à partir du ${lr.starts_on}`, p_link: "/me" });
   redirect(`${back}?ok=${q(`Congé ${approve ? "validé" : "refusé"} pour ${e.first_name} ${e.last_name}.`)}`);
 }

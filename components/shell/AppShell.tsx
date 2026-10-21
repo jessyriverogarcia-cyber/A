@@ -27,6 +27,7 @@ function navItems(): NavItem[] {
     { key: "map", href: `/map/${sectorConfig.sites[0].id}`, module: "map" },
     { key: "me", href: "/me" },
     { key: "dashboard", href: "/dashboard" },
+    { key: "planning", href: "/planning", module: "planning" },
     ...sectorConfig.modulesPriority.map((m) => moduleRoutes[m]).filter(Boolean),
     { key: "integrations", href: "/settings/integrations", module: "settings" },
     { key: "tech", href: "/settings/tech" },

@@ -12,6 +12,8 @@ import { DEMO_DOMAIN, demoEmail } from "../lib/demo";
 import { packInZone } from "../lib/map/kits";
 import { DEFAULT_RECTS, zonePolygon } from "../config/layout.default";
 import { suggestReply } from "../lib/domain/replies";
+import { todayIso } from "../lib/domain/kpis";
+import { zonedToIso } from "../lib/domain/hr";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -33,22 +35,24 @@ const pick = <T>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)];
 const between = (a: number, b: number) => a + rand() * (b - a);
 const int = (a: number, b: number) => Math.floor(between(a, b + 1));
 
+// Dates et heures dans le fuseau de l'entreprise, quel que soit celui du serveur : « aujourd'hui
+// 10 h » est 10 h à Bordeaux, et la démo reste cohérente juste après minuit.
 const now = new Date();
-const today = new Date(now);
-today.setHours(0, 0, 0, 0);
-const at = (dayOffset: number, h: number, m = 0) => {
-  const d = new Date(today);
-  d.setDate(d.getDate() + dayOffset);
-  d.setHours(h, m, 0, 0);
-  return d;
-};
+const tz = cfg.company.timezone;
+const todayLocal = todayIso(tz, now);
+const day = (offset: number) => new Date(new Date(`${todayLocal}T12:00:00Z`).getTime() + offset * 86_400_000).toISOString().slice(0, 10);
+const at = (dayOffset: number, h: number, m = 0) => new Date(zonedToIso(day(dayOffset), `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`, tz));
 const iso = (d: Date) => d.toISOString();
-const day = (offset: number) => {
-  const d = new Date(today);
-  d.setDate(d.getDate() + offset);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const year = Number(todayLocal.slice(0, 4));
+/**
+ * Moment déjà passé « aujourd'hui » : l'heure voulue si elle est passée, sinon juste avant
+ * maintenant — sans jamais retomber la veille (démo générée peu après minuit).
+ */
+const past = (dayOffset: number, h: number, m = 0, minutesBefore = 5) => {
+  const t = at(dayOffset, h, m);
+  if (t <= now) return t;
+  return new Date(Math.max(at(dayOffset, 0, 1).getTime(), now.getTime() - minutesBefore * 60_000));
 };
-const year = now.getFullYear();
 const frDate = (iso: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(`${iso}T12:00:00Z`));
 /** PDF minimal valide (une page, un titre) pour les documents de démo. */
 const tinyPdf = (title: string) => {
@@ -634,7 +638,7 @@ async function main() {
       "Bonjour, où en est l'avancement ? Nous devons caler nos essais.",
     ][pi % 3];
     const answered = pi % 4 === 3;
-    const inAt = at(-int(0, 3), int(8, 16), int(0, 59));
+    const inAt = past(-int(0, 3), int(8, 16), int(0, 59), int(10, 60));
     const draft = suggestReply(inbound, {
       companyName: c.name,
       senderName: `${owner.first_name} ${owner.last_name}`,
@@ -734,8 +738,8 @@ async function main() {
   await insert(
     "cash_forecast",
     Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(year, now.getMonth() + i, 1);
-      return { org_id, month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`, inflow: Math.round(between(180000, 420000) / 1000) * 1000, outflow: Math.round(between(160000, 260000) / 1000) * 1000 };
+      const d = new Date(Date.UTC(year, Number(todayLocal.slice(5, 7)) - 1 + i, 1));
+      return { org_id, month: `${d.toISOString().slice(0, 7)}-01`, inflow: Math.round(between(180000, 420000) / 1000) * 1000, outflow: Math.round(between(160000, 260000) / 1000) * 1000 };
     }),
   );
   const poLine = (sku: string, qty: number) => {
@@ -765,10 +769,10 @@ async function main() {
   const quoteQuestion = "Bonjour, pourriez-vous nous faire un devis pour 200 coques de drone en PA12, livrables en janvier ?";
   const soufflerieWo = wos!.find((w) => w.client_id === client("Soufflerie Atlantique").id && w.status === "active")!;
   const [invTh, supTh, quoteTh, intTh] = await insert("threads", [
-    { org_id, subject: `Facture ${medInv!.number}`, channel: "email", client_id: client("Médicor Implants").id, assigned_employee: emp("Marc").id, last_message_at: iso(at(0, 8, 12)) },
+    { org_id, subject: `Facture ${medInv!.number}`, channel: "email", client_id: client("Médicor Implants").id, assigned_employee: emp("Marc").id, last_message_at: iso(past(0, 8, 12, 20)) },
     { org_id, subject: `Commande CMD-${year}-0031 — poudre AlSi10Mg`, channel: "email", supplier_id: sup("powder_metal"), assigned_employee: emp("Julien").id, last_message_at: iso(at(-1, 15, 40)) },
-    { org_id, subject: "Demande de devis — coques de drone série 200", channel: "email", client_id: client("Biscaye Drones").id, assigned_employee: emp("Karim").id, last_message_at: iso(at(0, 7, 55)) },
-    { org_id, subject: `${soufflerieWo.number} — écart de cote au contrôle`, channel: "internal", work_order_id: soufflerieWo.id, client_id: soufflerieWo.client_id, created_by_employee: emp("Nadia").id, assigned_employee: emp("Karim").id, last_message_at: iso(at(0, 9, 5)) },
+    { org_id, subject: "Demande de devis — coques de drone série 200", channel: "email", client_id: client("Biscaye Drones").id, assigned_employee: emp("Karim").id, last_message_at: iso(past(0, 7, 55, 30)) },
+    { org_id, subject: `${soufflerieWo.number} — écart de cote au contrôle`, channel: "internal", work_order_id: soufflerieWo.id, client_id: soufflerieWo.client_id, created_by_employee: emp("Nadia").id, assigned_employee: emp("Karim").id, last_message_at: iso(past(0, 9, 5, 10)) },
   ]);
   const signed = (first: string, inbound: string, extra: Partial<Parameters<typeof suggestReply>[1]>) => suggestReply(inbound, { ...extra, companyName: c.name, senderName: person(first) }).body;
   await insert("messages", [
@@ -805,8 +809,7 @@ async function main() {
     if (absentToday.has(e.first_name as string)) continue;
     const zk = zones.find((z) => z.id === e.home_zone_id)!.key as string;
     // Démo jouable à toute heure : avant l'ouverture, l'équipe est « arrivée » il y a quelques minutes.
-    let arrive = at(0, 7, int(20, 75));
-    if (arrive > now) arrive = new Date(now.getTime() - int(3, 40) * 60_000);
+    const arrive = past(0, 7, int(20, 75), int(3, 40));
     badgeRows.push({ org_id, employee_id: e.id, kind: "in", reader: reader(zk), at: iso(arrive) });
     if (onBreak.has(e.first_name as string)) {
       const b = new Date(Math.max(arrive.getTime() + 60_000, now.getTime() - 8 * 60_000));
@@ -834,8 +837,7 @@ async function main() {
 
   const room = asset("SALLE-GAR").id;
   await insert("calendar_events", [
-    { org_id, owner_employee_id: emp("Karim").id, kind: "client", title: "Revue de conception avec Cargo Céleste", client_id: client("Cargo Céleste").id, starts_at: iso(at(0, 10)), ends_at: iso(at(0, 11, 30)), participants: [emp("Élise").id, emp("Inès").id], room_asset_id: room },
-    { org_id, owner_employee_id: emp("Élise").id, kind: "client", title: "Revue de conception avec Cargo Céleste", client_id: client("Cargo Céleste").id, starts_at: iso(at(0, 10)), ends_at: iso(at(0, 11, 30)), participants: [emp("Karim").id], room_asset_id: room },
+    { org_id, owner_employee_id: emp("Karim").id, kind: "client", title: "Revue de conception avec Cargo Céleste", client_id: client("Cargo Céleste").id, starts_at: iso(at(0, 10)), ends_at: iso(at(0, 11, 30)), participants: [emp("Élise").id, emp("Inès").id], room_asset_id: room, location: "Salle de réunion" },
     { org_id, owner_employee_id: emp("Julien").id, kind: "meeting", title: "Point production quotidien", starts_at: iso(at(0, 8, 30)), ends_at: iso(at(0, 8, 50)), participants: employees.filter((e) => e.role_key === "operator").map((e) => e.id), room_asset_id: room },
     { org_id, owner_employee_id: emp("Claire").id, kind: "meeting", title: "Comité de direction", starts_at: iso(at(0, 14)), ends_at: iso(at(0, 15, 30)), participants: [emp("Julien").id, emp("Nadia").id, emp("Marc").id], room_asset_id: room },
     { org_id, owner_employee_id: emp("Mathis").id, kind: "travel", title: "Essais en vol — base d'Arcachon", starts_at: iso(at(0, 6)), ends_at: iso(at(0, 20)) },

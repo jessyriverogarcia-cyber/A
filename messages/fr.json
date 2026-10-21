@@ -41,7 +41,8 @@
     "security": "Sécurité du compte",
     "me": "Mon espace",
     "notifications": "Notifications",
-    "integrations": "Intégrations"
+    "integrations": "Intégrations",
+    "planning": "Agenda"
   },
   "tech": {
     "title": "Page technique",

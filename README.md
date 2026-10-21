@@ -144,6 +144,14 @@ L'envoi d'e-mails est **simulé** (badge « envoi simulé ») : le message est r
   filtres, historique d'une fiche, export CSV. La RLS ne montre que les tables des modules lisibles par le rôle
   (la production ne voit pas l'historique des factures, les salaires restent réservés).
 
+## Agenda (`/planning`)
+
+- Semaine par personne ou pour l'équipe : réunions, rendez-vous clients, absences validées, maintenances.
+- Chacun crée ses événements et invite des collègues (notifiés).
+- **Abonnement iCal** personnel (Outlook, Google Agenda, Calendrier Apple) : lien à jeton, révocable, limité à ses
+  propres événements et absences ; seule l'empreinte du jeton est stockée.
+- Boîte Microsoft 365 / Google connectée : absences validées et maintenances publiées dans son agenda.
+
 ## Notes de frais (`/me`, `/finance/expenses`)
 
 - Saisie par chacun dans « Mon espace » : montant TTC ou kilomètres (barème de la fiche secteur), justificatif
@@ -213,5 +221,4 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 - [x] Phase 4 — assistant IA, traitements planifiés, temps réel du back-office, intégrations messagerie, performance (RLS et index), sécurité (CSP, mode démo), mise en production
 
 **Ce qui reste simulé ou à faire** (détail dans `docs/RECETTE.md`) : sans clés, l'IA et l'envoi d'e-mails
-sont simulés et affichés comme tels ; la synchronisation des agendas, la réception des e-mails entrants,
-et le SSO de connexion ne sont pas faits ; Factur-X est partiel (XML EN 16931 validé, PDF non certifié PDF/A-3, pas de transmission PDP).
+sont simulés et affichés comme tels ; la réception des e-mails entrants et le SSO de connexion ne sont pas faits ; Factur-X est partiel (XML EN 16931 validé, PDF non certifié PDF/A-3, pas de transmission PDP).

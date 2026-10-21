@@ -43,7 +43,7 @@ La section 11 du prompt maître étant tronquée, cette liste reprend les exigen
 | Intégration | État | Remarque |
 | --- | --- | --- |
 | Envoi d'e-mails Microsoft 365 / Gmail | 🟡 | OAuth + PKCE, jetons chiffrés, Graph `sendMail` / Gmail `send` testés avec un `fetch` simulé ; aucun locataire réel testé |
-| Agendas Outlook / Google | ⛔ | portées demandées, synchronisation non implémentée |
+| Agendas | ✅ / 🟡 | agenda intégré (semaine, invités notifiés) et **flux iCal personnel** (abonnement Outlook / Google / Apple, jeton révocable) faits et testés ; publication des absences et maintenances dans l'agenda de la boîte connectée testée avec une API simulée uniquement |
 | SSO (connexion Microsoft / Google) | ⛔ | boutons affichés « Non configuré » ; à activer dans Supabase Auth |
 | Assistant Claude | 🟡 | actif dès que `ANTHROPIC_API_KEY` est défini |
 | Traitements planifiés (pg_cron) | ✅ | e2e : exécution manuelle et dédoublonnage |

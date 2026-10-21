@@ -98,3 +98,13 @@ describe("envoi réel", () => {
     expect(inserted).toHaveLength(0);
   });
 });
+
+describe("agenda partagé", () => {
+  it("absence sur plusieurs jours : journée entière, fin exclusive, selon le fournisseur", async () => {
+    const { providerPayload } = await import("@/lib/integrations/calendar");
+    const e = { title: "Absence — Léa", start: "2026-11-02", end: "2026-11-06", allDay: true };
+    expect(providerPayload("google", e, "Europe/Paris")).toMatchObject({ summary: "Absence — Léa", start: { date: "2026-11-02" }, end: { date: "2026-11-07" } });
+    expect(providerPayload("microsoft", e, "Europe/Paris")).toMatchObject({ isAllDay: true, start: { dateTime: "2026-11-02T00:00:00", timeZone: "Europe/Paris" }, end: { dateTime: "2026-11-07T00:00:00" }, showAs: "oof" });
+    expect(providerPayload("microsoft", { title: "Maintenance FDM-05", start: "2026-10-22T05:00:00Z", end: "2026-10-22T10:00:00Z" }, "Europe/Paris")).toMatchObject({ start: { dateTime: "2026-10-22T05:00:00", timeZone: "UTC" } });
+  });
+});

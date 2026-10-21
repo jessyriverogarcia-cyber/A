@@ -106,16 +106,8 @@ export class OAuthMailProvider implements MailProvider {
     this.name = PROVIDERS[provider].label;
   }
 
-  private async token(): Promise<string> {
-    const { data: sealed, error } = await this.db.rpc("integration_secret", { p_provider: this.provider });
-    if (error || !sealed) throw new Error("Boîte d'envoi non accessible avec vos droits.");
-    let t = open<Tokens>(sealed);
-    if (t.expires_at - 60_000 < Date.now()) {
-      if (!t.refresh_token) throw new Error("Connexion expirée : reconnectez la boîte d'envoi.");
-      t = await refresh(this.provider, t.refresh_token);
-      await this.db.rpc("touch_integration", { p_provider: this.provider, p_ciphertext: seal(t), p_error: null as unknown as string });
-    }
-    return t.access_token;
+  private token() {
+    return accessToken(this.db, this.provider);
   }
 
   async send(mail: OutgoingMail): Promise<MailResult> {
@@ -153,6 +145,19 @@ export class OAuthMailProvider implements MailProvider {
       return { ok: false, simulated: false, reason };
     }
   }
+}
+
+/** Jeton d'accès valide de la boîte connectée (rafraîchi et re-chiffré si besoin). */
+export async function accessToken(db: Db, provider: ProviderId): Promise<string> {
+  const { data: sealed, error } = await db.rpc("integration_secret", { p_provider: provider });
+  if (error || !sealed) throw new Error("Boîte d'envoi non accessible avec vos droits.");
+  let t = open<Tokens>(sealed);
+  if (t.expires_at - 60_000 < Date.now()) {
+    if (!t.refresh_token) throw new Error("Connexion expirée : reconnectez la boîte d'envoi.");
+    t = await refresh(provider, t.refresh_token);
+    await db.rpc("touch_integration", { p_provider: provider, p_ciphertext: seal(t), p_error: null as unknown as string });
+  }
+  return t.access_token;
 }
 
 /** Boîte d'envoi active : un compte connecté (et configuré côté serveur), sinon la simulation. */
