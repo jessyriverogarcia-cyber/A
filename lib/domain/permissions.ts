@@ -56,7 +56,7 @@ const MATRIX: Record<string, Matrix> = {
   hr: {
     ...base,
     people: RWD,
-    presence: ["read", "update", "approve", "export"],
+    presence: ["read", "create", "update", "approve", "export"], // create : correction des oublis de pointage
     planning: RW,
     hr: [...RWD, "approve", "export"],
     salaries: [...RWD, "export"],

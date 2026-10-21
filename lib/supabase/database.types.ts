@@ -199,14 +199,14 @@ isOneToOne: false
                   ]
                 },"candidates": {
                   Row: {
-                    "ai_summary": string | null,"created_at": string,"created_by": string | null,"email": string | null,"full_name": string,"id": string,"job_opening_id": string | null,"org_id": string,"score": string | null,"source": string | null,"stage": string,"updated_at": string
+                    "ai_summary": string | null,"created_at": string,"created_by": string | null,"email": string | null,"full_name": string,"id": string,"job_opening_id": string | null,"notes": string | null,"org_id": string,"phone": string | null,"score": string | null,"source": string | null,"stage": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "ai_summary"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"full_name": string,"id"?: string,"job_opening_id"?: string | null,"org_id": string,"score"?: string | null,"source"?: string | null,"stage"?: string,"updated_at"?: string
+                    "ai_summary"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"full_name": string,"id"?: string,"job_opening_id"?: string | null,"notes"?: string | null,"org_id": string,"phone"?: string | null,"score"?: string | null,"source"?: string | null,"stage"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "ai_summary"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"full_name"?: string,"id"?: string,"job_opening_id"?: string | null,"org_id"?: string,"score"?: string | null,"source"?: string | null,"stage"?: string,"updated_at"?: string
+                    "ai_summary"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"full_name"?: string,"id"?: string,"job_opening_id"?: string | null,"notes"?: string | null,"org_id"?: string,"phone"?: string | null,"score"?: string | null,"source"?: string | null,"stage"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -465,14 +465,14 @@ isOneToOne: false
                   ]
                 },"employees": {
                   Row: {
-                    "active": boolean,"appearance": NonNullable<Json>,"avatar_color": string | null,"contract_type": string,"created_at": string,"created_by": string | null,"department": string | null,"email": string | null,"first_name": string,"home_zone_id": string | null,"id": string,"job_title": string,"last_name": string,"manager_id": string | null,"org_id": string,"phone": string | null,"role_key": string | null,"site_id": string | null,"skills": (string)[],"start_date": string | null,"updated_at": string,"work_rate": number
+                    "active": boolean,"appearance": NonNullable<Json>,"avatar_color": string | null,"contract_type": string,"created_at": string,"created_by": string | null,"department": string | null,"email": string | null,"first_name": string,"home_zone_id": string | null,"id": string,"job_title": string,"last_name": string,"leave_carryover": number,"manager_id": string | null,"org_id": string,"phone": string | null,"role_key": string | null,"site_id": string | null,"skills": (string)[],"start_date": string | null,"updated_at": string,"weekly_hours": number,"work_rate": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "active"?: boolean,"appearance"?: NonNullable<Json>,"avatar_color"?: string | null,"contract_type"?: string,"created_at"?: string,"created_by"?: string | null,"department"?: string | null,"email"?: string | null,"first_name": string,"home_zone_id"?: string | null,"id"?: string,"job_title": string,"last_name": string,"manager_id"?: string | null,"org_id": string,"phone"?: string | null,"role_key"?: string | null,"site_id"?: string | null,"skills"?: (string)[],"start_date"?: string | null,"updated_at"?: string,"work_rate"?: number
+                    "active"?: boolean,"appearance"?: NonNullable<Json>,"avatar_color"?: string | null,"contract_type"?: string,"created_at"?: string,"created_by"?: string | null,"department"?: string | null,"email"?: string | null,"first_name": string,"home_zone_id"?: string | null,"id"?: string,"job_title": string,"last_name": string,"leave_carryover"?: number,"manager_id"?: string | null,"org_id": string,"phone"?: string | null,"role_key"?: string | null,"site_id"?: string | null,"skills"?: (string)[],"start_date"?: string | null,"updated_at"?: string,"weekly_hours"?: number,"work_rate"?: number
                   }
                   Update: {
-                    "active"?: boolean,"appearance"?: NonNullable<Json>,"avatar_color"?: string | null,"contract_type"?: string,"created_at"?: string,"created_by"?: string | null,"department"?: string | null,"email"?: string | null,"first_name"?: string,"home_zone_id"?: string | null,"id"?: string,"job_title"?: string,"last_name"?: string,"manager_id"?: string | null,"org_id"?: string,"phone"?: string | null,"role_key"?: string | null,"site_id"?: string | null,"skills"?: (string)[],"start_date"?: string | null,"updated_at"?: string,"work_rate"?: number
+                    "active"?: boolean,"appearance"?: NonNullable<Json>,"avatar_color"?: string | null,"contract_type"?: string,"created_at"?: string,"created_by"?: string | null,"department"?: string | null,"email"?: string | null,"first_name"?: string,"home_zone_id"?: string | null,"id"?: string,"job_title"?: string,"last_name"?: string,"leave_carryover"?: number,"manager_id"?: string | null,"org_id"?: string,"phone"?: string | null,"role_key"?: string | null,"site_id"?: string | null,"skills"?: (string)[],"start_date"?: string | null,"updated_at"?: string,"weekly_hours"?: number,"work_rate"?: number
                   }
                   Relationships: [
                     {
@@ -675,14 +675,14 @@ isOneToOne: false
                   ]
                 },"leave_requests": {
                   Row: {
-                    "approver_id": string | null,"comment": string | null,"created_at": string,"created_by": string | null,"days": number,"employee_id": string,"ends_on": string,"id": string,"kind": string,"org_id": string,"starts_on": string,"status": string,"updated_at": string
+                    "approver_id": string | null,"comment": string | null,"created_at": string,"created_by": string | null,"days": number,"decided_at": string | null,"employee_id": string,"ends_on": string,"id": string,"kind": string,"org_id": string,"rejection_reason": string | null,"starts_on": string,"status": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "approver_id"?: string | null,"comment"?: string | null,"created_at"?: string,"created_by"?: string | null,"days": number,"employee_id": string,"ends_on": string,"id"?: string,"kind": string,"org_id": string,"starts_on": string,"status"?: string,"updated_at"?: string
+                    "approver_id"?: string | null,"comment"?: string | null,"created_at"?: string,"created_by"?: string | null,"days": number,"decided_at"?: string | null,"employee_id": string,"ends_on": string,"id"?: string,"kind": string,"org_id": string,"rejection_reason"?: string | null,"starts_on": string,"status"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "approver_id"?: string | null,"comment"?: string | null,"created_at"?: string,"created_by"?: string | null,"days"?: number,"employee_id"?: string,"ends_on"?: string,"id"?: string,"kind"?: string,"org_id"?: string,"starts_on"?: string,"status"?: string,"updated_at"?: string
+                    "approver_id"?: string | null,"comment"?: string | null,"created_at"?: string,"created_by"?: string | null,"days"?: number,"decided_at"?: string | null,"employee_id"?: string,"ends_on"?: string,"id"?: string,"kind"?: string,"org_id"?: string,"rejection_reason"?: string | null,"starts_on"?: string,"status"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {

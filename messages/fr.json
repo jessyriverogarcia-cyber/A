@@ -38,7 +38,8 @@
     "pilotage": "Pilotage",
     "settings": "Paramètres",
     "tech": "Page technique",
-    "security": "Sécurité du compte"
+    "security": "Sécurité du compte",
+    "me": "Mon espace"
   },
   "tech": {
     "title": "Page technique",

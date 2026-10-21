@@ -721,6 +721,8 @@ async function main() {
         { org_id, employee_id: e.id, kind: "break_end", reader: "BADGE-ACC", at: iso(at(d, 12, int(45, 59))) },
         { org_id, employee_id: e.id, kind: "out", reader: "BADGE-ACC", at: iso(at(d, 16, int(30, 90))) },
       );
+      // Oubli de pointage de sortie à corriger (tuile RH « oublis de pointage »)
+      if (e.first_name === "Hugo" && history.length && d === -1) history.pop();
     }
   }
   await insert("badge_events", history);
@@ -762,6 +764,8 @@ async function main() {
     { org_id, employee_id: emp("Tom").id, title: "Habilitation ATEX poudres métalliques", provider: "Organisme fictif", scheduled_on: day(-200), status: "done", expires_on: day(165) },
     { org_id, employee_id: emp("Manon").id, title: "Bonnes pratiques salle blanche ISO 7", provider: "Organisme fictif", scheduled_on: day(-30), status: "done", expires_on: day(335) },
     { org_id, employee_id: emp("Hugo").id, title: "Conduite portique grand format niveau 2", scheduled_on: day(10), status: "planned" },
+    { org_id, employee_id: emp("Samir").id, title: "Sauveteur secouriste du travail (SST)", provider: "Organisme fictif", scheduled_on: day(-700), status: "done", expires_on: day(24) },
+    { org_id, employee_id: emp("Chloé").id, title: "Habilitation produits chimiques (résines)", provider: "Organisme fictif", scheduled_on: day(-365), status: "done", expires_on: day(-2) },
   ]);
   await insert("onboarding_tasks", [
     { org_id, employee_id: emp("Bastien").id, title: "Remise du badge et des EPI", due_on: day(-10), done: true },

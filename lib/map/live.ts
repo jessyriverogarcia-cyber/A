@@ -31,6 +31,10 @@ export function eventLabel(type: string) {
       "payment.received": "Paiement reçu",
       "deal.stage": "Affaire déplacée",
       "quote.sent": "Devis envoyé",
+      "leave.requested": "Demande de congé",
+      "leave.approved": "Congé validé",
+      "leave.rejected": "Congé refusé",
+      "candidate.hired": "Recrutement",
     } as Record<string, string>
   )[type] ?? type;
 }

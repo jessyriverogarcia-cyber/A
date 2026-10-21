@@ -15,13 +15,14 @@ function navItems(): NavItem[] {
     ops: { key: "ops", href: "/ops", module: "ops" },
     finance: { key: "finance", href: "/finance", module: "finance" },
     resources: { key: "resources", href: "/resources", module: "resources" },
-    hr: { key: "hr", href: "/hr", module: "hr", phase: 3 },
+    hr: { key: "hr", href: "/hr", module: "hr" },
     comms: { key: "comms", href: "/comms", module: "comms", phase: 3 },
     ai: { key: "ai", href: "/ai", module: "ai", phase: 4 },
     pilotage: { key: "pilotage", href: "/pilotage", module: "pilotage", phase: 3 },
   };
   return [
     { key: "map", href: `/map/${sectorConfig.sites[0].id}`, module: "map" },
+    { key: "me", href: "/me" },
     { key: "dashboard", href: "/dashboard", phase: 3 },
     ...sectorConfig.modulesPriority.map((m) => moduleRoutes[m]).filter(Boolean),
     { key: "tech", href: "/settings/tech" },

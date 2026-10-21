@@ -98,6 +98,22 @@ personnes et appareils viennent de la base et de la fiche secteur.
 - **Équipements** : état (panne, remise en service, maintenance) synchronisé avec la Map, maintenance préventive
   (périodicité par machine, « effectuée aujourd'hui », planification ajoutée au planning).
 
+## Back-office — RH (`/hr`) et Mon espace (`/me`)
+
+- **Mon espace** (tous les rôles) : badgeuse virtuelle (même effet que la badgeuse : la Map réagit), heures de la
+  semaine, solde de congés (25 j ouvrés/an, période au 1er juin, prorata temps partiel), demande de congé avec calcul
+  automatique des jours ouvrés (week-ends et 11 jours fériés français exclus).
+- **À faire aujourd'hui** : congés à valider en un clic, oublis de pointage, habilitations qui expirent (60 j),
+  candidatures à traiter, tâches d'intégration en retard ; présents, pauses, congés, absents.
+- **Présences** : grille hebdomadaire calculée depuis les badges (pauses déduites), écart au contrat, correction des
+  oublis tracée, export CSV (Excel FR).
+- **Congés** : validation en un clic, alerte de chevauchement dans le service.
+- **Équipe** : fiche (heures badgées vs heures saisies sur dossiers, congés, formations, entretiens, intégration) ;
+  rémunération visible uniquement par la direction et les RH (RLS).
+- **Recrutement** : postes, kanban des candidats (score, résumé).
+- **Variables de paie** : base mensuelle, heures, heures sup., absences par type ; export CSV pour le cabinet.
+  Le bulletin (cotisations, net) reste produit par le logiciel de paie.
+
 La **page technique** (`/settings/tech`) montre la session, la matrice de droits du rôle,
 le nombre de lignes visibles par table (RLS) et le flux `activity_events` en temps réel.
 
@@ -124,7 +140,8 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
   - [x] Production : à faire aujourd'hui, tableau des OF par étape, fiche dossier (étapes, CQ, heures, tâches, checklist, traçabilité), planning machines
   - [x] Finance : à faire aujourd'hui, factures (depuis le dossier, acompte, avoir), envoi, paiements, relances graduées, PDF, trésorerie
   - [x] Ressources & stock : à faire aujourd'hui, stock et mouvements, réassort en un clic, commandes fournisseurs (envoi, réception), équipements et maintenance
-  - [ ] RH · Communication · Pilotage
+  - [x] RH : mon espace (badgeuse, heures, congés), à faire aujourd'hui, équipe, présences, congés, recrutement, variables de paie
+  - [ ] Communication · Pilotage
 - [ ] Phase 4 — intégrations, IA, finitions, déploiement
 
 **Mode simulé :** aucune intégration (Microsoft 365, Google Workspace, SSO, API Claude) n'est branchée.
