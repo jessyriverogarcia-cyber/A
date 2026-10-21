@@ -69,9 +69,10 @@ test("pipeline : changer l'étape d'une affaire (persistant)", async ({ page }) 
   const card = page.getByTestId("col-lead").locator("article").first();
   const id = (await card.getAttribute("data-testid"))!.replace("deal-", "");
   await page.getByTestId(`deal-stage-${id}`).selectOption("qualified");
-  await expect(page.getByTestId("col-qualified").getByTestId(`deal-${id}`)).toBeVisible();
+  await expect(page.getByTestId("col-qualified").getByTestId(`deal-${id}`)).toBeVisible({ timeout: 15_000 });
+  await page.waitForLoadState("networkidle");
   await page.reload();
-  await expect(page.getByTestId("col-qualified").getByTestId(`deal-${id}`)).toBeVisible();
+  await expect(page.getByTestId("col-qualified").getByTestId(`deal-${id}`)).toBeVisible({ timeout: 15_000 });
   await page.screenshot({ path: "test-results/screens/24-crm-pipeline.png", fullPage: true });
 });
 

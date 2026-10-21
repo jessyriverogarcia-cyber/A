@@ -53,7 +53,7 @@ test("clic sur une machine : fiche résumée et lien vers le back-office", async
   const panel = page.getByTestId("selection-panel");
   await expect(panel).toBeVisible();
   await expect(panel).toContainText("MET-0");
-  await expect(page.getByTestId("open-backoffice")).toHaveAttribute("href", /\/resources\?asset=/);
+  await expect(page.getByTestId("open-backoffice")).toHaveAttribute("href", /\/ops\/(work-orders|planning)/);
   await page.screenshot({ path: "test-results/screens/11-map-selection.png" });
 });
 

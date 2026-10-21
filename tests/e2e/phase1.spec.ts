@@ -33,8 +33,11 @@ test("direction : voit tout, temps réel bidirectionnel", async ({ page }) => {
   // Supabase annonce l'abonnement un peu avant que l'écoute des changements Postgres soit active.
   await page.waitForTimeout(1500);
   const before = await page.getByTestId("realtime-list").locator("li").count();
-  await page.getByTestId("realtime-emit").click();
-  await expect(page.getByTestId("realtime-list").locator("li")).toHaveCount(before + 1);
+  // L'écoute Postgres peut démarrer une seconde après « Connecté » : on réémet si besoin.
+  await expect(async () => {
+    await page.getByTestId("realtime-emit").click();
+    expect(await page.getByTestId("realtime-list").locator("li").count()).toBeGreaterThan(before);
+  }).toPass({ timeout: 20_000, intervals: [2_000] });
   await expect(page.getByTestId("realtime-list").locator("li").first()).toContainText("page technique");
   await page.screenshot({ path: "test-results/screens/02-tech-direction.png", fullPage: true });
 

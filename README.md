@@ -58,6 +58,19 @@ personnes et appareils viennent de la base et de la fiche secteur.
   affaire gagnée, ordre de fabrication créé à la 1re étape sur le bon site, événement visible sur la Map.
   Le scénario « Devis signé » de la Map passe par le même chemin.
 
+## Back-office — Production (`/ops`)
+
+- **À faire aujourd'hui** : dossiers en retard, contrôle qualité en attente, machines arrêtées, dossiers à lancer
+  en impression, à expédier, échéances proches, budgets d'heures dépassés (alerte à 80 %).
+- **Ordres de fabrication** : tableau par étape (fiche secteur) ou liste, filtres site / famille / statut.
+- **Fiche dossier** : étapes avec règle du domaine (pas de saut, retour arrière possible), choix de la machine au
+  passage en impression (la machine passe « en production », libérée à la sortie), contrôle qualité réservé au droit
+  « approve » (rejet → reprise en post-traitement), expédition (camion, jet ou hydravion sur la Map), heures
+  (un opérateur saisit les siennes), tâches, checklist, traçabilité (lot matière, norme, n° de série), historique.
+- **Planning machines** : réservations sur 7 jours, charge par machine, arrêts et maintenances prévues.
+- Toutes les actions écrivent un `activity_event` : la Map s'anime en direct. Le scénario de démo utilise le même
+  service (`lib/services/ops.ts`).
+
 La **page technique** (`/settings/tech`) montre la session, la matrice de droits du rôle,
 le nombre de lignes visibles par table (RLS) et le flux `activity_events` en temps réel.
 
@@ -81,7 +94,8 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 - [x] Phase 2 — Map vivante 3D : 2 sites, objets cliquables, fiches, animations, temps réel, scénario live, mode édition
 - [ ] Phase 3 — back-office module par module
   - [x] Commercial : à faire aujourd'hui, pipeline kanban, clients 360°, devis (éditeur, marge, PDF, envoi et relance pré-remplis, acceptation → OF)
-  - [ ] Production · Finance · Ressources · RH · Communication · Pilotage
+  - [x] Production : à faire aujourd'hui, tableau des OF par étape, fiche dossier (étapes, CQ, heures, tâches, checklist, traçabilité), planning machines
+  - [ ] Finance · Ressources · RH · Communication · Pilotage
 - [ ] Phase 4 — intégrations, IA, finitions, déploiement
 
 **Mode simulé :** aucune intégration (Microsoft 365, Google Workspace, SSO, API Claude) n'est branchée.

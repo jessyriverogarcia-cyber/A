@@ -5,6 +5,7 @@ import { formatDocumentNumber } from "@/lib/domain/quote";
 import { nextStage, overallProgress } from "@/lib/domain/workOrder";
 import { todayIso } from "@/lib/domain/kpis";
 import { acceptQuote } from "@/lib/services/crm";
+import { moveStage, qualityDecision, shipWorkOrder, type OpsCtx } from "@/lib/services/ops";
 import type { Database } from "@/lib/supabase/database.types";
 
 /**
@@ -17,6 +18,7 @@ type Ctx = { db: SupabaseClient; orgId: string; siteId: string; actor: string };
 export type ScenarioResult = { ok: true; summary: string } | { ok: false; reason: string };
 
 const stages = sectorConfig.workOrder.stages;
+const ops = (c: Ctx): OpsCtx => ({ db: c.db as SupabaseClient<Database>, orgId: c.orgId, actor: c.actor });
 const stageZone = (stageId: string) => stages.find((s) => s.id === stageId)?.zoneId ?? null;
 const pick = <T>(rows: T[]): T | undefined => rows[Math.floor(Math.random() * rows.length)];
 
@@ -31,17 +33,6 @@ async function emit(c: Ctx, type: string, entity_type: string, entity_id: string
     .from("activity_events")
     .insert({ org_id: c.orgId, type, entity_type, entity_id, actor: c.actor, payload: { site_id: c.siteId, ...payload } });
   if (error) throw new Error(error.message);
-}
-
-async function moveStage(c: Ctx, wo: { id: string; stage: string }, to: string, extra: Record<string, unknown> = {}) {
-  const now = new Date().toISOString();
-  await c.db.from("work_order_stages").update({ left_at: now }).eq("work_order_id", wo.id).is("left_at", null);
-  await c.db.from("work_order_stages").insert({ org_id: c.orgId, work_order_id: wo.id, stage: to, entered_at: now });
-  const zone = await zoneId(c, stageZone(to));
-  await c.db
-    .from("work_orders")
-    .update({ stage: to, stage_progress: 5, progress: overallProgress(stages, to, 5), ...(zone ? { zone_id: zone } : {}), ...extra })
-    .eq("id", wo.id);
 }
 
 async function nextNumber(c: Ctx, table: "work_orders" | "quotes", prefix: string) {
@@ -100,58 +91,28 @@ const handlers: Record<string, (c: Ctx) => Promise<ScenarioResult>> = {
   },
 
   async print_done(c) {
-    const { data: wos } = await c.db
-      .from("work_orders")
-      .select("id, number, stage, title, asset_id, assets(code)")
-      .eq("org_id", c.orgId)
-      .eq("site_id", c.siteId)
-      .eq("stage", "printing")
-      .eq("status", "active")
-      .not("asset_id", "is", null);
+    const { data: wos } = await c.db.from("work_orders").select("id, number").eq("org_id", c.orgId).eq("site_id", c.siteId).eq("stage", "printing").eq("status", "active").not("asset_id", "is", null);
     const wo = pick(wos ?? []);
     if (!wo) return { ok: false, reason: "Aucune impression en cours sur ce site." };
-    const machine = (wo.assets as unknown as { code: string } | null)?.code;
-    await c.db.from("assets").update({ status: "idle" }).eq("id", wo.asset_id);
-    await moveStage(c, wo, nextStage(stages, "printing")!.id, { asset_id: null });
-    await emit(c, "work_order.stage.printing_done", "work_order", wo.id, { number: wo.number, piece: wo.title, machine, asset_id: wo.asset_id });
-    return { ok: true, summary: `${wo.number} terminé sur ${machine}` };
+    const next = nextStage(stages, "printing")!.id;
+    const r = await moveStage(ops(c), wo.id, next);
+    return r.ok ? { ok: true, summary: `${wo.number} terminé` } : { ok: false, reason: r.reason };
   },
-
   async qc_result(c) {
-    const { data: wos } = await c.db.from("work_orders").select("id, number, stage, traceability").eq("org_id", c.orgId).eq("site_id", c.siteId).eq("stage", "quality").eq("status", "active");
+    const { data: wos } = await c.db.from("work_orders").select("id, number").eq("org_id", c.orgId).eq("site_id", c.siteId).eq("stage", "quality").eq("status", "active");
     const wo = pick(wos ?? []);
     if (!wo) return { ok: false, reason: "Aucune pièce en contrôle qualité sur ce site." };
     const accepted = Math.random() < 0.7;
-    if (accepted) await moveStage(c, wo, nextStage(stages, "quality")!.id);
-    else await moveStage(c, wo, "post_processing");
-    await emit(c, "work_order.qc", "work_order", wo.id, {
-      number: wo.number,
-      of: wo.number,
-      result: accepted ? "validé" : "rejeté",
-      reason: accepted ? null : "Écart dimensionnel hors tolérance — reprise en post-traitement",
-    });
-    return { ok: true, summary: `CQ ${accepted ? "validé" : "rejeté"} pour ${wo.number}` };
+    const r = await qualityDecision(ops(c), wo.id, accepted, accepted ? null : "Écart dimensionnel hors tolérance — reprise en post-traitement");
+    return r.ok ? { ok: true, summary: `CQ ${accepted ? "validé" : "rejeté"} pour ${wo.number}` } : { ok: false, reason: r.reason };
   },
-
   async shipment_left(c) {
-    const { data: wos } = await c.db
-      .from("work_orders")
-      .select("id, number, product_family, traceability, clients(name)")
-      .eq("org_id", c.orgId)
-      .eq("site_id", c.siteId)
-      .eq("stage", "shipping")
-      .eq("status", "active");
+    const { data: wos } = await c.db.from("work_orders").select("id, number").eq("org_id", c.orgId).eq("site_id", c.siteId).eq("stage", stages.at(-1)!.id).eq("status", "active");
     const wo = pick(wos ?? []);
     if (!wo) return { ok: false, reason: "Rien n'attend d'expédition sur ce site." };
-    const model = (wo.traceability as { model?: { type: string } }).model;
-    const mode = model?.type === "flying_wing" ? "seaplane" : model?.type === "oblique_jet" ? "jet" : "truck";
-    await c.db.from("work_orders").update({ status: "done", progress: 100, stage_progress: 100 }).eq("id", wo.id);
-    await c.db.from("work_order_stages").update({ left_at: new Date().toISOString() }).eq("work_order_id", wo.id).is("left_at", null);
-    const client = (wo.clients as unknown as { name: string } | null)?.name;
-    await emit(c, "shipment.departed", "work_order", wo.id, { number: wo.number, of: wo.number, client, mode });
-    return { ok: true, summary: `${wo.number} expédié (${mode})` };
+    const r = await shipWorkOrder(ops(c), wo.id);
+    return r.ok ? { ok: true, summary: `${wo.number} expédié (${r.mode})` } : { ok: false, reason: r.reason };
   },
-
   async low_stock(c) {
     const { data: items } = await c.db.from("stock_items").select("id, sku, label, quantity, min_quantity, unit").eq("org_id", c.orgId).gt("min_quantity", 0);
     const candidates = (items ?? []).filter((s) => Number(s.quantity) >= Number(s.min_quantity));

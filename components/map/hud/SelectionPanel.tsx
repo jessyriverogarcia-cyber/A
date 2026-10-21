@@ -80,7 +80,7 @@ export function SelectionPanel() {
     const wo = Object.values(st.workOrders).find((w) => w.asset_id === a.id && w.status === "active");
     title = a.name;
     subtitle = `${a.code}${a.technology ? ` · ${sectorConfig.technologies.find((x) => x.id === a.technology)?.label ?? a.technology}` : ""}`;
-    href = `/resources?asset=${a.id}`;
+    href = wo ? `/ops/work-orders/${wo.id}` : `/ops/planning`;
     body = (
       <>
         <Row label={t("status")}>
