@@ -11,6 +11,7 @@ import { Badge, Card, CardTitle } from "@/components/ui/primitives";
 import { Flash, PageHeader, Select, SimulatedBadge, Textarea } from "@/components/ui/backoffice";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { archiveThreadAction, assignThreadAction, regenerateDraftAction, sendReplyAction, simulateInboundAction } from "../../actions";
+import { LiveRefresh } from "@/components/realtime/LiveRefresh";
 
 export const metadata = { title: "Échange" };
 
@@ -45,6 +46,7 @@ export default async function ThreadPage({ params, searchParams }: { params: Pro
 
   return (
     <>
+      <LiveRefresh orgId={ctx.org.id} tables={["messages"]} />
       <PageHeader
         back={{ href: "/comms", label: "Boîte de réception" }}
         title={t.subject}

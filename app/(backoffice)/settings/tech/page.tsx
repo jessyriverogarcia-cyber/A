@@ -7,6 +7,12 @@ import { ACTIONS, MODULES } from "@/lib/domain/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatMoney } from "@/lib/format";
 import { RealtimePanel } from "./RealtimePanel";
+import { can } from "@/lib/auth";
+import { Flash } from "@/components/ui/backoffice";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { runDailyJobsAction } from "./actions";
+
+const JOB_LABELS: Record<string, string> = { factures_en_retard: "factures passées en retard", devis_expires: "devis expirés", devis_a_relancer: "devis à relancer", maintenances: "maintenances dues", habilitations: "habilitations à renouveler", notifications: "notifications envoyées" };
 
 export const metadata = { title: "Page technique" };
 
@@ -18,7 +24,8 @@ const TABLES = [
   "messages", "notifications", "activity_events", "audit_log", "roles", "permissions",
 ] as const;
 
-export default async function TechPage() {
+export default async function TechPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
+  const sp = await searchParams;
   const ctx = await requireUser();
   const t = await getTranslations("tech");
   const supabase = await createClient();
@@ -33,9 +40,10 @@ export default async function TechPage() {
     supabase.from("work_orders").select("number, title, stage, progress, due_date, clients(name)").order("number").limit(8),
     supabase.from("presence_status").select("status"),
     supabase.from("stock_items").select("sku, label, quantity, min_quantity, unit"),
-    supabase.from("invoices").select("number, status, total_ttc, due_date").order("number"),
+    supabase.from("invoices").select("number, status, total_ttc, due_date").order("issue_date", { ascending: false }).limit(10),
     supabase.from("activity_events").select("id, type, payload, at").order("at", { ascending: false }).limit(10),
   ]);
+  const { data: runs } = await supabase.from("job_runs").select("id, job, trigger, started_at, finished_at, result, error").order("started_at", { ascending: false }).limit(6);
   const stageLabel = (id: string) => sectorConfig.workOrder.stages.find((s) => s.id === id)?.label ?? id;
   const presenceCount = (presence ?? []).reduce<Record<string, number>>((acc, p) => ({ ...acc, [p.status ?? "absent"]: (acc[p.status ?? "absent"] ?? 0) + 1 }), {});
   const lowStock = (stock ?? []).filter((s) => Number(s.quantity) < Number(s.min_quantity));
@@ -140,6 +148,34 @@ export default async function TechPage() {
           </Card>
         </div>
       </div>
+
+      <Card data-testid="jobs">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="mb-0">Traitements planifiés</CardTitle>
+          {can(ctx, "settings", "update") && (
+            <form action={runDailyJobsAction}>
+              <SubmitButton variant="secondary" testId="run-jobs">Lancer maintenant</SubmitButton>
+            </form>
+          )}
+        </div>
+        <p className="mb-3 text-sm text-muted">Chaque jour à 4 h UTC (pg_cron) : factures échues, devis expirés ou à relancer, maintenances dues, habilitations à renouveler. Chaque alerte n&apos;est notifiée qu&apos;une fois.</p>
+        <Flash ok={sp.ok} err={sp.err} />
+        <ul className="space-y-2 text-sm">
+          {(runs ?? []).map((r) => {
+            const res = (r.result ?? {}) as Record<string, number>;
+            return (
+              <li key={r.id} className="rounded-lg border border-border px-3 py-2">
+                <div className="flex justify-between text-xs text-muted">
+                  <span>{formatDate(r.started_at)} · {new Date(r.started_at).toLocaleTimeString(sectorConfig.company.locale, { timeZone: sectorConfig.company.timezone, timeStyle: "short" })}</span>
+                  <Badge tone={r.error ? "danger" : "ok"}>{r.error ? "erreur" : r.trigger === "manual" ? "manuel" : "planifié"}</Badge>
+                </div>
+                {r.error ? <p className="text-danger">{r.error}</p> : <p>{Object.entries(JOB_LABELS).map(([k, l]) => `${res[k] ?? 0} ${l}`).join(" · ")}</p>}
+              </li>
+            );
+          })}
+          {!runs?.length && <li className="text-muted">Aucune exécution pour l&apos;instant (première exécution demain matin).</li>}
+        </ul>
+      </Card>
 
       <RealtimePanel orgId={ctx.org.id} initial={(events ?? []) as { id: string; type: string; payload: Record<string, unknown>; at: string }[]} />
     </div>

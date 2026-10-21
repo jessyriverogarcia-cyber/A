@@ -719,6 +719,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"job_runs": {
+                  Row: {
+                    "error": string | null,"finished_at": string | null,"id": number,"job": string,"org_id": string | null,"result": Json | null,"started_at": string,"trigger": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "error"?: string | null,"finished_at"?: string | null,"id"?: never,"job": string,"org_id"?: string | null,"result"?: Json | null,"started_at"?: string,"trigger"?: string
+                  }
+                  Update: {
+                    "error"?: string | null,"finished_at"?: string | null,"id"?: never,"job"?: string,"org_id"?: string | null,"result"?: Json | null,"started_at"?: string,"trigger"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "job_runs_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "orgs"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"leave_requests": {
                   Row: {
                     "approver_id": string | null,"comment": string | null,"created_at": string,"created_by": string | null,"days": number,"decided_at": string | null,"employee_id": string,"ends_on": string,"id": string,"kind": string,"org_id": string,"rejection_reason": string | null,"starts_on": string,"status": string,"updated_at": string
@@ -829,14 +849,14 @@ isOneToOne: false
                   ]
                 },"notifications": {
                   Row: {
-                    "body": string | null,"created_at": string,"created_by": string | null,"id": string,"link": string | null,"org_id": string,"read_at": string | null,"title": string,"updated_at": string,"user_id": string
+                    "body": string | null,"created_at": string,"created_by": string | null,"dedupe_key": string | null,"id": string,"link": string | null,"org_id": string,"read_at": string | null,"title": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "body"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"link"?: string | null,"org_id": string,"read_at"?: string | null,"title": string,"updated_at"?: string,"user_id": string
+                    "body"?: string | null,"created_at"?: string,"created_by"?: string | null,"dedupe_key"?: string | null,"id"?: string,"link"?: string | null,"org_id": string,"read_at"?: string | null,"title": string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "body"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"link"?: string | null,"org_id"?: string,"read_at"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string
+                    "body"?: string | null,"created_at"?: string,"created_by"?: string | null,"dedupe_key"?: string | null,"id"?: string,"link"?: string | null,"org_id"?: string,"read_at"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -1667,6 +1687,9 @@ isOneToOne: false
                            },
 "refresh_overdue_invoices":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"run_daily_jobs":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            }
           }
           Enums: {

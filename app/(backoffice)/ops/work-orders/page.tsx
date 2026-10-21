@@ -6,6 +6,8 @@ import { todayIso } from "@/lib/domain/kpis";
 import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/primitives";
 import { EmptyState, Flash, PageHeader, Select, Table, Td } from "@/components/ui/backoffice";
+import { requireUser } from "@/lib/auth";
+import { LiveRefresh } from "@/components/realtime/LiveRefresh";
 
 export const metadata = { title: "Ordres de fabrication" };
 
@@ -18,6 +20,7 @@ const PRIORITY: Record<string, { label: string; tone: "neutral" | "info" | "warn
 };
 
 export default async function WorkOrdersPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
+  const ctx = await requireUser();
   const sp = await searchParams;
   const view = sp.view === "list" ? "list" : "board";
   const db = await createClient();
@@ -60,6 +63,7 @@ export default async function WorkOrdersPage({ searchParams }: { searchParams: P
 
   return (
     <>
+      <LiveRefresh orgId={ctx.org.id} tables={["work_orders"]} />
       <PageHeader
         title={sectorConfig.workOrder.labelPlural}
         subtitle={`${wos.length} ${sp.status === "done" ? "livrés" : "en cours"} · les nouveaux dossiers naissent de l'acceptation d'un devis`}

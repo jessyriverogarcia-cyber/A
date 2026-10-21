@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/format";
 import { ASSET_STATUS_LABEL } from "@/lib/map/theme";
 import { Badge, Card, CardTitle } from "@/components/ui/primitives";
 import { Flash, LinkButton, PageHeader, Stat } from "@/components/ui/backoffice";
+import { LiveRefresh } from "@/components/realtime/LiveRefresh";
 
 export const metadata = { title: "Production" };
 
@@ -65,6 +66,7 @@ export default async function OpsHome({ searchParams }: { searchParams: Promise<
 
   return (
     <>
+      <LiveRefresh orgId={ctx.org.id} tables={["work_orders", "assets"]} />
       <PageHeader
         title="Production"
         subtitle={`${ctx.full_name.split(" ")[0]}, voici l'état de l'atelier.`}

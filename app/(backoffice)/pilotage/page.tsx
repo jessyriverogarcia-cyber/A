@@ -9,6 +9,7 @@ import { formatMoney, formatPercent } from "@/lib/format";
 import { Card, CardTitle } from "@/components/ui/primitives";
 import { PageHeader, Stat } from "@/components/ui/backoffice";
 import { BarChart } from "@/components/charts/BarChart";
+import { LiveRefresh } from "@/components/realtime/LiveRefresh";
 
 export const metadata = { title: "Pilotage" };
 
@@ -33,6 +34,7 @@ export default async function PilotagePage() {
 
   return (
     <>
+      <LiveRefresh orgId={ctx.org.id} tables={["work_orders", "invoices", "assets"]} />
       <PageHeader title="Tableau de bord direction" subtitle="Calculé à l'instant depuis les modules : aucune donnée ressaisie. Cliquez un chiffre pour le détail." />
 
       <section className="mb-6">

@@ -10,6 +10,7 @@ import { todayIso } from "@/lib/domain/kpis";
 import { sectorConfig } from "@/config/sector.config";
 import { Badge } from "@/components/ui/primitives";
 import { EmptyState, Flash, LinkButton, PageHeader, SimulatedBadge } from "@/components/ui/backoffice";
+import { LiveRefresh } from "@/components/realtime/LiveRefresh";
 
 export const metadata = { title: "Communication" };
 
@@ -65,6 +66,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
+      <LiveRefresh orgId={ctx.org.id} tables={["messages", "threads"]} />
       <PageHeader
         title="Boîte de réception"
         subtitle="Tous les échanges, rangés par client, fournisseur et dossier. Les réponses sont préparées : relisez, envoyez."

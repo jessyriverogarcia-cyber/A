@@ -9,6 +9,7 @@ import { EmptyState, Flash, PageHeader, Table, Td } from "@/components/ui/backof
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { StockGauge } from "@/components/resources/StockGauge";
 import { reorderAction } from "../actions";
+import { LiveRefresh } from "@/components/realtime/LiveRefresh";
 
 export const metadata = { title: "Stock" };
 
@@ -26,6 +27,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
+      <LiveRefresh orgId={ctx.org.id} tables={["stock_items"]} />
       <PageHeader title="Stock" subtitle={`${rows.length} articles · cochez des articles puis « Commander » pour un réassort pré-rempli`} />
       <Flash ok={sp.ok} err={sp.err} />
       <div className="mb-4 flex flex-wrap gap-1">
