@@ -36,6 +36,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   serverExternalPackages: ["@react-pdf/renderer"],
+  // Polices et profil de couleur lus à l'exécution par la génération des PDF (PDF/A-3)
+  outputFileTracingIncludes: { "/**": ["./assets/fonts/**", "./assets/icc/**"] },
   // Dépôt de documents (plans, certificats) par Server Action : 20 Mo comme le bucket.
   experimental: { serverActions: { bodySizeLimit: "21mb" } },
   async headers() {

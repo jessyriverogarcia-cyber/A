@@ -6,10 +6,14 @@
 export interface FxParty {
   name: string;
   address?: string | null; // « 12 rue …, 33000 Ville »
+  city?: string | null; // si l'adresse ne contient pas la ville
   country?: string | null;
   vatNumber?: string | null;
   siren?: string | null;
 }
+
+/** SIREN déduit d'un numéro de TVA français (FR + clé + SIREN). */
+export const sirenFromVat = (vat?: string | null) => (vat ?? "").replace(/\s/g, "").match(/^FR[0-9A-Z]{2}(\d{9})$/)?.[1] ?? null;
 
 export interface FxLine {
   description: string;
@@ -31,6 +35,14 @@ export interface FxInvoice {
   iban?: string | null;
   note?: string | null;
   orderReference?: string | null;
+  /** Date de livraison ou de réalisation de la prestation (BT-72). */
+  deliveryDate?: string | null;
+  /** Mentions de paiement obligatoires (BT-22, codes AAB / PMD / PMT). */
+  paymentNotes?: { discount: string; latePenalty: string; recoveryFee: string };
+  /** Cadre de facturation de la réforme française (BT-23). */
+  invoicingMode?: string;
+  /** Facture corrigée par un avoir (BG-3). */
+  precedingInvoice?: { number: string; issueDate: string } | null;
 }
 
 export const PROFILE_EN16931 = "urn:cen.eu:en16931:2017";
@@ -61,15 +73,16 @@ export function fxTotals(lines: FxLine[], paid = 0) {
 
 function party(tag: string, p: FxParty) {
   const a = splitAddress(p.address);
+  if (!a.city && p.city) a.city = p.city;
+  const siren = p.siren ?? sirenFromVat(p.vatNumber);
+  const el = (name: string, v: string) => (v ? `\n        <ram:${name}>${esc(v)}</ram:${name}>` : ""); // pas d'élément vide
   return `<ram:${tag}>
-      <ram:Name>${esc(p.name)}</ram:Name>${p.siren ? `
-      <ram:SpecifiedLegalOrganization><ram:ID schemeID="0002">${esc(p.siren)}</ram:ID></ram:SpecifiedLegalOrganization>` : ""}
-      <ram:PostalTradeAddress>
-        <ram:PostcodeCode>${esc(a.postcode)}</ram:PostcodeCode>
-        <ram:LineOne>${esc(a.line)}</ram:LineOne>
-        <ram:CityName>${esc(a.city)}</ram:CityName>
+      <ram:Name>${esc(p.name)}</ram:Name>${siren ? `
+      <ram:SpecifiedLegalOrganization><ram:ID schemeID="0002">${esc(siren)}</ram:ID></ram:SpecifiedLegalOrganization>` : ""}
+      <ram:PostalTradeAddress>${el("PostcodeCode", a.postcode)}${el("LineOne", a.line)}${el("CityName", a.city)}
         <ram:CountryID>${esc(p.country ?? "FR")}</ram:CountryID>
-      </ram:PostalTradeAddress>${p.vatNumber ? `
+      </ram:PostalTradeAddress>${siren ? `
+      <ram:URIUniversalCommunication><ram:URIID schemeID="0225">${esc(siren)}</ram:URIID></ram:URIUniversalCommunication>` : ""}${p.vatNumber ? `
       <ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">${esc(p.vatNumber.replace(/\s/g, ""))}</ram:ID></ram:SpecifiedTaxRegistration>` : ""}
     </ram:${tag}>`;
 }
@@ -99,14 +112,18 @@ export function buildCiiXml(inv: FxInvoice): string {
     .join("");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100" xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100">
-  <rsm:ExchangedDocumentContext>
+  <rsm:ExchangedDocumentContext>${inv.invoicingMode ? `
+    <ram:BusinessProcessSpecifiedDocumentContextParameter><ram:ID>${esc(inv.invoicingMode)}</ram:ID></ram:BusinessProcessSpecifiedDocumentContextParameter>` : ""}
     <ram:GuidelineSpecifiedDocumentContextParameter><ram:ID>${PROFILE_EN16931}</ram:ID></ram:GuidelineSpecifiedDocumentContextParameter>
   </rsm:ExchangedDocumentContext>
   <rsm:ExchangedDocument>
     <ram:ID>${esc(inv.number)}</ram:ID>
     <ram:TypeCode>${TYPE_CODE[inv.kind]}</ram:TypeCode>
     <ram:IssueDateTime><udt:DateTimeString format="102">${d8(inv.issueDate)}</udt:DateTimeString></ram:IssueDateTime>${inv.note ? `
-    <ram:IncludedNote><ram:Content>${esc(inv.note)}</ram:Content></ram:IncludedNote>` : ""}
+    <ram:IncludedNote><ram:Content>${esc(inv.note)}</ram:Content></ram:IncludedNote>` : ""}${inv.paymentNotes ? `
+    <ram:IncludedNote><ram:Content>${esc(inv.paymentNotes.discount)}</ram:Content><ram:SubjectCode>AAB</ram:SubjectCode></ram:IncludedNote>
+    <ram:IncludedNote><ram:Content>${esc(inv.paymentNotes.latePenalty)}</ram:Content><ram:SubjectCode>PMD</ram:SubjectCode></ram:IncludedNote>
+    <ram:IncludedNote><ram:Content>${esc(inv.paymentNotes.recoveryFee)}</ram:Content><ram:SubjectCode>PMT</ram:SubjectCode></ram:IncludedNote>` : ""}
   </rsm:ExchangedDocument>
   <rsm:SupplyChainTradeTransaction>${lines}
     <ram:ApplicableHeaderTradeAgreement>
@@ -114,7 +131,9 @@ export function buildCiiXml(inv: FxInvoice): string {
     ${party("BuyerTradeParty", inv.buyer)}${inv.orderReference ? `
       <ram:BuyerOrderReferencedDocument><ram:IssuerAssignedID>${esc(inv.orderReference)}</ram:IssuerAssignedID></ram:BuyerOrderReferencedDocument>` : ""}
     </ram:ApplicableHeaderTradeAgreement>
-    <ram:ApplicableHeaderTradeDelivery/>
+    <ram:ApplicableHeaderTradeDelivery>${inv.deliveryDate ? `
+      <ram:ActualDeliverySupplyChainEvent><ram:OccurrenceDateTime><udt:DateTimeString format="102">${d8(inv.deliveryDate)}</udt:DateTimeString></ram:OccurrenceDateTime></ram:ActualDeliverySupplyChainEvent>
+    ` : ""}</ram:ApplicableHeaderTradeDelivery>
     <ram:ApplicableHeaderTradeSettlement>
       <ram:InvoiceCurrencyCode>${esc(inv.currency)}</ram:InvoiceCurrencyCode>${inv.iban ? `
       <ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode><ram:PayeePartyCreditorFinancialAccount><ram:IBANID>${esc(inv.iban.replace(/\s/g, ""))}</ram:IBANID></ram:PayeePartyCreditorFinancialAccount></ram:SpecifiedTradeSettlementPaymentMeans>` : ""}${taxes}${inv.dueDate ? `
@@ -126,7 +145,8 @@ export function buildCiiXml(inv: FxInvoice): string {
         <ram:GrandTotalAmount>${amt(t.grand)}</ram:GrandTotalAmount>
         <ram:TotalPrepaidAmount>${amt(inv.paidAmount ?? 0)}</ram:TotalPrepaidAmount>
         <ram:DuePayableAmount>${amt(t.due)}</ram:DuePayableAmount>
-      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>${inv.precedingInvoice ? `
+      <ram:InvoiceReferencedDocument><ram:IssuerAssignedID>${esc(inv.precedingInvoice.number)}</ram:IssuerAssignedID><ram:FormattedIssueDateTime><qdt:DateTimeString format="102">${d8(inv.precedingInvoice.issueDate)}</qdt:DateTimeString></ram:FormattedIssueDateTime></ram:InvoiceReferencedDocument>` : ""}
     </ram:ApplicableHeaderTradeSettlement>
   </rsm:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoice>

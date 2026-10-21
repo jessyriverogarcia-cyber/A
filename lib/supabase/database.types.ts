@@ -715,14 +715,14 @@ isOneToOne: false
                   ]
                 },"invoices": {
                   Row: {
-                    "client_id": string,"contact_id": string | null,"created_at": string,"created_by": string | null,"due_date": string,"id": string,"issue_date": string,"kind": string,"notes": string | null,"number": string,"org_id": string,"paid_amount": number,"quote_id": string | null,"sent_at": string | null,"status": string,"total_ht": number,"total_ttc": number,"total_vat": number,"updated_at": string,"work_order_id": string | null
+                    "client_id": string,"contact_id": string | null,"corrects_invoice_id": string | null,"created_at": string,"created_by": string | null,"due_date": string,"id": string,"issue_date": string,"kind": string,"notes": string | null,"number": string,"org_id": string,"paid_amount": number,"quote_id": string | null,"sent_at": string | null,"status": string,"total_ht": number,"total_ttc": number,"total_vat": number,"updated_at": string,"work_order_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "client_id": string,"contact_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"due_date": string,"id"?: string,"issue_date"?: string,"kind"?: string,"notes"?: string | null,"number": string,"org_id": string,"paid_amount"?: number,"quote_id"?: string | null,"sent_at"?: string | null,"status"?: string,"total_ht"?: number,"total_ttc"?: number,"total_vat"?: number,"updated_at"?: string,"work_order_id"?: string | null
+                    "client_id": string,"contact_id"?: string | null,"corrects_invoice_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"due_date": string,"id"?: string,"issue_date"?: string,"kind"?: string,"notes"?: string | null,"number": string,"org_id": string,"paid_amount"?: number,"quote_id"?: string | null,"sent_at"?: string | null,"status"?: string,"total_ht"?: number,"total_ttc"?: number,"total_vat"?: number,"updated_at"?: string,"work_order_id"?: string | null
                   }
                   Update: {
-                    "client_id"?: string,"contact_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"due_date"?: string,"id"?: string,"issue_date"?: string,"kind"?: string,"notes"?: string | null,"number"?: string,"org_id"?: string,"paid_amount"?: number,"quote_id"?: string | null,"sent_at"?: string | null,"status"?: string,"total_ht"?: number,"total_ttc"?: number,"total_vat"?: number,"updated_at"?: string,"work_order_id"?: string | null
+                    "client_id"?: string,"contact_id"?: string | null,"corrects_invoice_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"due_date"?: string,"id"?: string,"issue_date"?: string,"kind"?: string,"notes"?: string | null,"number"?: string,"org_id"?: string,"paid_amount"?: number,"quote_id"?: string | null,"sent_at"?: string | null,"status"?: string,"total_ht"?: number,"total_ttc"?: number,"total_vat"?: number,"updated_at"?: string,"work_order_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -736,6 +736,12 @@ isOneToOne: false
       columns: ["contact_id"]
 isOneToOne: false
       referencedRelation: "contacts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "invoices_corrects_invoice_id_fkey"
+      columns: ["corrects_invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoices"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "invoices_org_id_fkey"

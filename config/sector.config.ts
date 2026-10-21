@@ -26,6 +26,12 @@ const input: SectorConfigInput = {
       email: "contact@strato-fab.test",
       phone: "+33 5 00 00 00 00",
       iban: "FR76 0000 0000 0000 0000 0000 000",
+      paymentNotes: {
+        discount: "Pas d'escompte pour paiement anticipé.",
+        latePenalty: "En cas de retard : pénalités au taux d'intérêt de la BCE majoré de 10 points (art. L441-10 du Code de commerce).",
+        recoveryFee: "Indemnité forfaitaire pour frais de recouvrement en cas de retard : 40 €.",
+      },
+      invoicingMode: "M1", // pièces fabriquées et prestations (mixte)
     },
   },
 

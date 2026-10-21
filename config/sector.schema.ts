@@ -131,6 +131,14 @@ export const SectorConfigSchema = z.object({
       email: z.string().email(),
       phone: z.string().min(1),
       iban: z.string().optional(),
+      /** Mentions obligatoires des factures (aussi reprises dans la facture électronique). */
+      paymentNotes: z.object({
+        discount: z.string().min(1),
+        latePenalty: z.string().min(1),
+        recoveryFee: z.string().min(1),
+      }),
+      /** Cadre de facturation de la réforme (BT-23) : B1 biens, S1 services, M1 mixte… */
+      invoicingMode: z.enum(["B1", "S1", "M1", "B2", "S2", "M2", "S3", "B4", "S4", "M4", "S5", "S6", "B7", "S7"]),
     }),
   }),
   sites: z.array(SiteSchema).min(1).max(3),

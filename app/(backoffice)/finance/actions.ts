@@ -121,7 +121,7 @@ export async function creditNoteAction(form: FormData) {
   const today = new Date().toISOString().slice(0, 10);
   const { data: credit, error } = await db
     .from("invoices")
-    .insert({ org_id: ctx.org.id, client_id: src.client_id, work_order_id: src.work_order_id, quote_id: src.quote_id, contact_id: src.contact_id, kind: "credit_note", number: await nextNumber(db, "invoices", "AV"), status: "draft", issue_date: today, due_date: today, notes: `Avoir sur facture ${src.number}` })
+    .insert({ org_id: ctx.org.id, client_id: src.client_id, work_order_id: src.work_order_id, quote_id: src.quote_id, contact_id: src.contact_id, kind: "credit_note", corrects_invoice_id: src.id, number: await nextNumber(db, "invoices", "AV"), status: "draft", issue_date: today, due_date: today, notes: `Avoir sur facture ${src.number}` })
     .select("id")
     .single();
   if (error) redirect(`/finance/invoices/${id}?err=${q(error.message)}`);

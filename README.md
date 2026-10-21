@@ -158,6 +158,13 @@ L'envoi d'e-mails est **simulé** (badge « envoi simulé ») : le message est r
   propres événements et absences ; seule l'empreinte du jeton est stockée.
 - Boîte Microsoft 365 / Google connectée : absences validées et maintenances publiées dans son agenda.
 
+## Facture électronique (Factur-X)
+
+Chaque facture, acompte ou avoir émis est un PDF/A-3B contenant son XML CII (profil EN 16931) : mentions légales
+codées (escompte, pénalités, indemnité de recouvrement), cadre de facturation, SIREN du vendeur et de l'acheteur,
+facture d'origine pour un avoir. Polices Inter incorporées (licence OFL), profil sRGB. Vérification :
+`scripts/validate-facturx.sh facture.pdf` (veraPDF, XSD, Schematron EN 16931 et règles BR-FR).
+
 ## Notes de frais (`/me`, `/finance/expenses`)
 
 - Saisie par chacun dans « Mon espace » : montant TTC ou kilomètres (barème de la fiche secteur), justificatif
@@ -228,4 +235,4 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 
 **Ce qui reste simulé ou à faire** (détail dans `docs/RECETTE.md`) : sans clés, l'IA et l'envoi d'e-mails
 sont simulés et affichés comme tels ; la relève des e-mails entrants, l'agenda connecté et le SSO sont codés mais non testés
-contre de vrais comptes Microsoft / Google ; Factur-X est partiel (XML EN 16931 validé, PDF non certifié PDF/A-3, pas de transmission PDP).
+contre de vrais comptes Microsoft / Google ; Factur-X est conforme (EN 16931, règles françaises, PDF/A-3B) mais la transmission par une plateforme agréée (PDP) reste à brancher.

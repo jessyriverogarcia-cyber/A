@@ -41,3 +41,25 @@ describe("Factur-X (CII EN 16931)", () => {
     expect(buildCiiXml({ ...base, kind: "credit_note" })).toContain("<ram:TypeCode>381</ram:TypeCode>");
   });
 });
+
+describe("Factur-X — règles de la réforme française", () => {
+  it("mentions AAB / PMD / PMT, mode de facturation, adresses électroniques SIREN, date de livraison, pas d'élément vide", async () => {
+    const { buildCiiXml, sirenFromVat } = await import("@/lib/domain/facturx");
+    expect(sirenFromVat("FR12 345678901")).toBe("345678901");
+    expect(sirenFromVat("DE123456789")).toBeNull();
+    const x = buildCiiXml({
+      number: "F1", kind: "invoice", issueDate: "2026-10-21", currency: "EUR", deliveryDate: "2026-10-20", invoicingMode: "M1",
+      paymentNotes: { discount: "Pas d'escompte.", latePenalty: "Pénalités…", recoveryFee: "40 €." },
+      seller: { name: "S", address: "1 rue A, 33000 Bordeaux", siren: "000000000" },
+      buyer: { name: "C", address: null, city: "Toulouse", vatNumber: "FR12345678901" },
+      lines: [{ description: "x", quantity: 1, unitPrice: 10, vatRate: 0.2 }],
+    });
+    expect(x).toContain("<ram:BusinessProcessSpecifiedDocumentContextParameter><ram:ID>M1</ram:ID>");
+    for (const code of ["AAB", "PMD", "PMT"]) expect(x).toContain(`<ram:SubjectCode>${code}</ram:SubjectCode>`);
+    expect(x).toContain('<ram:URIID schemeID="0225">000000000</ram:URIID>');
+    expect(x).toContain('<ram:URIID schemeID="0225">345678901</ram:URIID>');
+    expect(x).toContain("<ram:CityName>Toulouse</ram:CityName>");
+    expect(x).toContain('<udt:DateTimeString format="102">20261020</udt:DateTimeString>');
+    expect(x).not.toMatch(/<ram:(\w+)><\/ram:\1>|<ram:\w+\/>/);
+  });
+});

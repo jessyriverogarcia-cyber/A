@@ -42,7 +42,7 @@ export async function renderQuotePdf(db: Db, id: string): Promise<{ name: string
 export async function invoiceFacturX(db: Db, id: string): Promise<{ number: string; xml: string } | null> {
   const { data: inv } = await db
     .from("invoices")
-    .select("number, kind, status, issue_date, due_date, notes, paid_amount, clients(name, address, city, country, vat_number), work_orders(number), quotes(number), invoice_lines(description, quantity, unit_price, discount, vat_rate, position)")
+    .select("number, kind, status, issue_date, due_date, notes, paid_amount, corrects:corrects_invoice_id(number, issue_date), clients(name, address, city, country, vat_number), work_orders(number), quotes(number), invoice_lines(description, quantity, unit_price, discount, vat_rate, position)")
     .eq("id", id)
     .maybeSingle();
   if (!inv) return null;
@@ -55,14 +55,22 @@ export async function invoiceFacturX(db: Db, id: string): Promise<{ number: stri
     dueDate: inv.due_date,
     currency: c.currency,
     seller: { name: c.name, address: c.legal.address, country: c.country, vatNumber: c.legal.vatNumber, siren: c.legal.siren },
-    buyer: { name: client.name, address: client.address ?? client.city, country: client.country ?? "FR", vatNumber: client.vat_number },
+    buyer: { name: client.name, address: client.address, city: client.city, country: client.country ?? "FR", vatNumber: client.vat_number },
     lines: ((inv.invoice_lines ?? []) as { description: string; quantity: number; unit_price: number; discount: number; vat_rate: number; position: number }[])
       .sort((a, b) => a.position - b.position)
-      .map((l) => ({ description: l.description, quantity: Number(l.quantity), unitPrice: Math.round(Number(l.unit_price) * (1 - Number(l.discount)) * 100) / 100, vatRate: Number(l.vat_rate) })),
+      // Un avoir (type 381) s'exprime en montants positifs dans la facture électronique
+      .map((l) => ({ description: l.description, quantity: Number(l.quantity), unitPrice: (inv.kind === "credit_note" ? -1 : 1) * Math.round(Number(l.unit_price) * (1 - Number(l.discount)) * 100) / 100, vatRate: Number(l.vat_rate) })),
     paidAmount: inv.kind === "credit_note" ? 0 : Number(inv.paid_amount),
     iban: c.legal.iban,
     note: inv.notes,
     orderReference: (inv.quotes as unknown as { number: string } | null)?.number ?? (inv.work_orders as unknown as { number: string } | null)?.number ?? null,
+    deliveryDate: inv.issue_date,
+    paymentNotes: c.legal.paymentNotes,
+    invoicingMode: c.legal.invoicingMode,
+    precedingInvoice: (() => {
+      const o = inv.corrects as unknown as { number: string; issue_date: string } | null;
+      return o ? { number: o.number, issueDate: o.issue_date } : null;
+    })(),
   };
   return { number: inv.number, xml: buildCiiXml(fx) };
 }
