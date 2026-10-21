@@ -5,6 +5,7 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ["@react-pdf/renderer"],
 };
 
 export default withNextIntl(nextConfig);

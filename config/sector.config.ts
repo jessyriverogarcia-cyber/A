@@ -18,6 +18,14 @@ const input: SectorConfigInput = {
     logo: { kind: "monogram", value: "SF" },
     accentColor: "#FF6B2C", // orange « laser », sur fond graphite et bleu nuit
     ambiance: "Industriel propre / high-tech — béton clair, acier brossé, lueurs laser et UV, eau de la Garonne",
+    legal: {
+      address: "12 rue des Fictions, 33000 Bordeaux",
+      registration: "SAS au capital de 250 000 € · RCS Bordeaux 000 000 000 (fictif)",
+      vatNumber: "FR00 000000000",
+      email: "contact@strato-fab.test",
+      phone: "+33 5 00 00 00 00",
+      iban: "FR76 0000 0000 0000 0000 0000 000",
+    },
   },
 
   sites: [

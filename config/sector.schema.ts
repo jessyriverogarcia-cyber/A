@@ -121,6 +121,15 @@ export const SectorConfigSchema = z.object({
     logo: z.object({ kind: z.enum(["monogram", "file"]), value: z.string().min(1) }),
     accentColor: hexColor,
     ambiance: z.string().min(1),
+    /** Mentions légales imprimées sur les devis et factures (fictives en démo). */
+    legal: z.object({
+      address: z.string().min(1),
+      registration: z.string().min(1),
+      vatNumber: z.string().min(1),
+      email: z.string().email(),
+      phone: z.string().min(1),
+      iban: z.string().optional(),
+    }),
   }),
   sites: z.array(SiteSchema).min(1).max(3),
   workOrder: z.object({

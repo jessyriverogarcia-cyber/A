@@ -45,6 +45,19 @@ personnes et appareils viennent de la base et de la fiche secteur.
   bascule automatique en « Rapide » sous 30 i/s pendant 5 s. `?q=cinema` impose la qualité maximale
   (tournage de démo), `?q=rapide` la qualité légère.
 
+## Back-office — Commercial (`/crm`)
+
+- **À faire aujourd'hui** : devis à relancer (7 j sans réponse, 3 relances max), prochaines étapes dues,
+  devis qui expirent, brouillons ; indicateurs (pipeline pondéré, devis en attente, transformation, signé du mois).
+- **Pipeline** : kanban par étapes de la fiche secteur, glisser-déposer ou sélecteur, mise à jour en direct.
+- **Clients** : liste filtrable, fiche 360° (contacts, affaires, devis, dossiers, factures, échanges, notes).
+- **Devis** : lignes du catalogue, remises, coût interne et marge en direct, totaux recalculés côté serveur,
+  PDF (`/crm/quotes/[id]/pdf`), envoi et relance en un clic avec e-mail pré-rempli (**simulé** tant qu'aucune
+  messagerie n'est connectée : la copie est rangée dans l'historique du client).
+- **Zéro double saisie** : « Accepté par le client » appelle la fonction SQL `accept_quote` — devis accepté,
+  affaire gagnée, ordre de fabrication créé à la 1re étape sur le bon site, événement visible sur la Map.
+  Le scénario « Devis signé » de la Map passe par le même chemin.
+
 La **page technique** (`/settings/tech`) montre la session, la matrice de droits du rôle,
 le nombre de lignes visibles par table (RLS) et le flux `activity_events` en temps réel.
 
@@ -67,6 +80,8 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 - [x] Phase 1 — socle : Next.js 15, Supabase, schéma, authentification (mot de passe, lien magique, TOTP), rôles, données de démo
 - [x] Phase 2 — Map vivante 3D : 2 sites, objets cliquables, fiches, animations, temps réel, scénario live, mode édition
 - [ ] Phase 3 — back-office module par module
+  - [x] Commercial : à faire aujourd'hui, pipeline kanban, clients 360°, devis (éditeur, marge, PDF, envoi et relance pré-remplis, acceptation → OF)
+  - [ ] Production · Finance · Ressources · RH · Communication · Pilotage
 - [ ] Phase 4 — intégrations, IA, finitions, déploiement
 
 **Mode simulé :** aucune intégration (Microsoft 365, Google Workspace, SSO, API Claude) n'est branchée.

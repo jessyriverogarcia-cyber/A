@@ -49,5 +49,5 @@ export async function loadSiteSnapshot(ctx: UserContext, siteKey: string): Promi
     events: events.data ?? [],
     canEdit: can(ctx, "map", "update"),
     canRunScenario: isDemoMode() || can(ctx, "ops", "update"),
-  } as SiteSnapshot;
+  } as unknown as SiteSnapshot;
 }

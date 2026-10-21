@@ -19,7 +19,7 @@ export const getUserContext = cache(async (): Promise<UserContext | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("my_context");
   if (error || !data) return null;
-  return data as UserContext;
+  return data as unknown as UserContext;
 });
 
 export async function requireUser(): Promise<UserContext> {

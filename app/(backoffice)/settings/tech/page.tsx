@@ -25,7 +25,7 @@ export default async function TechPage() {
 
   const counts = await Promise.all(
     TABLES.map(async (table) => {
-      const { count, error } = await supabase.from(table).select("*", { count: "exact", head: true });
+      const { count, error } = await supabase.from(table as "sites").select("*", { count: "exact", head: true });
       return { table, count: error ? null : (count ?? 0) };
     }),
   );
@@ -37,7 +37,7 @@ export default async function TechPage() {
     supabase.from("activity_events").select("id, type, payload, at").order("at", { ascending: false }).limit(10),
   ]);
   const stageLabel = (id: string) => sectorConfig.workOrder.stages.find((s) => s.id === id)?.label ?? id;
-  const presenceCount = (presence ?? []).reduce<Record<string, number>>((acc, p) => ({ ...acc, [p.status]: (acc[p.status] ?? 0) + 1 }), {});
+  const presenceCount = (presence ?? []).reduce<Record<string, number>>((acc, p) => ({ ...acc, [p.status ?? "absent"]: (acc[p.status ?? "absent"] ?? 0) + 1 }), {});
   const lowStock = (stock ?? []).filter((s) => Number(s.quantity) < Number(s.min_quantity));
 
   return (
@@ -141,7 +141,7 @@ export default async function TechPage() {
         </div>
       </div>
 
-      <RealtimePanel orgId={ctx.org.id} initial={events ?? []} />
+      <RealtimePanel orgId={ctx.org.id} initial={(events ?? []) as { id: string; type: string; payload: Record<string, unknown>; at: string }[]} />
     </div>
   );
 }

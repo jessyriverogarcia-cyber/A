@@ -4,6 +4,8 @@ import { sectorConfig } from "@/config/sector.config";
 import { formatDocumentNumber } from "@/lib/domain/quote";
 import { nextStage, overallProgress } from "@/lib/domain/workOrder";
 import { todayIso } from "@/lib/domain/kpis";
+import { acceptQuote } from "@/lib/services/crm";
+import type { Database } from "@/lib/supabase/database.types";
 
 /**
  * Moteur du scénario de démo : chaque événement live de la fiche secteur écrit de VRAIES
@@ -89,15 +91,11 @@ const handlers: Record<string, (c: Ctx) => Promise<ScenarioResult>> = {
   },
 
   async quote_signed(c) {
-    const { data: quotes } = await c.db.from("quotes").select("id, number, deal_id, clients(id, name, product_family)").eq("org_id", c.orgId).eq("status", "sent");
+    const { data: quotes } = await c.db.from("quotes").select("id, number, clients(name)").eq("org_id", c.orgId).eq("status", "sent");
     const q = pick(quotes ?? []);
     if (!q) return { ok: false, reason: "Aucun devis envoyé en attente de signature." };
-    const client = q.clients as unknown as { id: string; name: string; product_family: string | null };
-    await c.db.from("quotes").update({ status: "accepted", accepted_at: new Date().toISOString() }).eq("id", q.id);
-    if (q.deal_id) await c.db.from("deals").update({ stage: "won", probability: 1 }).eq("id", q.deal_id);
-    const { data: deal } = q.deal_id ? await c.db.from("deals").select("title").eq("id", q.deal_id).single() : { data: null };
-    const wo = await createWorkOrder(c, client, deal?.title ?? `Commande ${q.number}`, q.id);
-    await emit(c, "quote.accepted", "quote", q.id, { numero: q.number, client: client.name, work_order: wo.number, work_order_id: wo.id });
+    // Même chemin que le bouton « Accepté » du back-office : zéro double saisie.
+    const wo = await acceptQuote(c.db as SupabaseClient<Database>, q.id);
     return { ok: true, summary: `Devis ${q.number} signé → ${wo.number}` };
   },
 

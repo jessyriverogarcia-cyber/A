@@ -11,7 +11,7 @@ type NavItem = { key: string; href: string; module?: Module; phase?: number };
 /** Ordre du menu : la Map, puis les modules dans l'ordre de priorité de la fiche secteur. */
 function navItems(): NavItem[] {
   const moduleRoutes: Record<string, NavItem> = {
-    crm: { key: "crm", href: "/crm", module: "crm", phase: 3 },
+    crm: { key: "crm", href: "/crm", module: "crm" },
     ops: { key: "ops", href: "/ops", module: "ops", phase: 3 },
     finance: { key: "finance", href: "/finance", module: "finance", phase: 3 },
     resources: { key: "resources", href: "/resources", module: "resources", phase: 3 },

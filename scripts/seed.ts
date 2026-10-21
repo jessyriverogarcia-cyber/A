@@ -423,7 +423,7 @@ async function main() {
   );
   const firstNames = ["Camille", "Nicolas", "Aurélie", "Thomas", "Julie", "Olivier", "Margaux", "Damien", "Laura", "Benoît", "Céline", "Fabien", "Émilie"];
   const lastNames = ["Arnaud", "Bertin", "Castel", "Delmas", "Esteve", "Faure", "Gaillard", "Hébert", "Imbert", "Jolly", "Klein", "Laporte", "Marchal"];
-  await insert(
+  const contacts = await insert(
     "contacts",
     clients.flatMap((cl, i) => [
       { org_id, client_id: cl.id, first_name: firstNames[i], last_name: lastNames[i], email: `${firstNames[i]}.${lastNames[i]}`.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "") + "@client.test", phone: `+33 6 00 00 ${String(i).padStart(2, "0")} 00`, job_title: pick(["Acheteur", "Directeur technique", "Responsable industrialisation", "Ingénieur projet"]), is_primary: true },
@@ -509,9 +509,13 @@ async function main() {
         expected_close: day(p.quote === "accepted" ? -int(10, 60) : int(5, 40)),
         owner_employee_id: cl.owner_employee_id,
         product_family: p.family,
+        next_step: p.quote === "sent" ? "Relancer l'acheteur sur le devis" : p.quote === "draft" ? "Finaliser le chiffrage" : null,
+        next_step_on: p.quote === "sent" ? day(int(-2, 2)) : p.quote === "draft" ? day(1) : null,
+        lost_reason: p.quote === "rejected" ? "Prix — concurrent moins cher sur le PEEK" : null,
       },
     ]);
-    const issued = p.quote === "accepted" ? -int(20, 70) : -int(1, 12);
+    // Devis envoyés il y a 8 à 12 jours : ils remontent dans « à relancer ».
+    const issued = p.quote === "accepted" ? -int(20, 70) : p.quote === "sent" ? -int(8, 12) : -int(1, 3);
     const [quote] = await insert("quotes", [
       {
         org_id,
@@ -526,6 +530,9 @@ async function main() {
         total_ttc: fromCents(totals.gross),
         total_cost: fromCents(totals.cost),
         accepted_at: p.quote === "accepted" ? iso(at(issued + 3, 10)) : null,
+        sent_at: p.quote === "draft" ? null : iso(at(issued, 11)),
+        contact_id: contacts.find((ct) => ct.client_id === cl.id && ct.is_primary)?.id ?? null,
+        rejected_reason: p.quote === "rejected" ? "Prix" : null,
       },
     ]);
     await insert(
@@ -605,6 +612,14 @@ async function main() {
       ]),
     );
   }
+
+  // Affaires en amont (pas encore de devis) pour remplir le haut du pipeline
+  await insert("deals", [
+    { org_id, client_id: client("Biscaye Drones").id, title: "Châssis de drone de livraison", stage: "lead", value: 18000, probability: 0.1, expected_close: day(60), owner_employee_id: emp("Karim").id, product_family: "industrial_parts", next_step: "Premier appel découverte", next_step_on: day(0) },
+    { org_id, client_id: client("Valmy Turbines").id, title: "Brûleurs de turbine — série 2", stage: "qualified", value: 64000, probability: 0.25, expected_close: day(45), owner_employee_id: emp("Karim").id, product_family: "aero_parts", next_step: "Recevoir les fichiers CAO", next_step_on: day(2) },
+    { org_id, client_id: client("Ortho3D Santé").id, title: "Guides dentaires — contrat annuel", stage: "qualified", value: 42000, probability: 0.25, expected_close: day(30), owner_employee_id: emp("Pauline").id, product_family: "medical", next_step: "Visite du site client", next_step_on: day(-1) },
+    { org_id, client_id: client("Cargo Céleste").id, title: "Portes cargo aile oblique — étude", stage: "lead", value: 120000, probability: 0.1, expected_close: day(90), owner_employee_id: emp("Karim").id, product_family: "oblique_wing_supersonic", next_step: "Envoyer la plaquette aéro", next_step_on: day(0) },
+  ]);
 
   // Factures : projets déjà livrés (historique) + acomptes sur les gros OF
   const { data: wos } = await db.from("work_orders").select("*").eq("org_id", org_id);
