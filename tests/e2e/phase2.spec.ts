@@ -45,6 +45,27 @@ test("la Map vivante se charge avec ses KPI et sans erreur", async ({ page }) =>
   expect(errors).toEqual([]);
 });
 
+test("éclairage : heure réelle du site, puis jour et nuit imposés", async ({ page }) => {
+  type Day = { elevation: number; nightness: number };
+  const day = () => page.evaluate(() => (window as unknown as { __mapProbe: { daylight(): Day } }).__mapProbe.daylight());
+  await openMap(page, "direction");
+  const toggle = page.getByTestId("time-toggle");
+  await expect(toggle).toHaveAttribute("data-mode", "auto");
+  await expect(toggle).toContainText("Heure réelle");
+  // Auto : la nuit suit la hauteur réelle du soleil à Bordeaux
+  const auto = await day();
+  expect(auto.nightness > 0.5).toBe(auto.elevation < -4);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("data-mode", "day");
+  await expect.poll(async () => (await day()).nightness, { timeout: 15_000 }).toBeLessThan(0.02);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("data-mode", "night");
+  await expect.poll(async () => (await day()).nightness, { timeout: 15_000 }).toBeGreaterThan(0.98);
+  await page.screenshot({ path: "test-results/screens/10b-map-nuit.png" });
+});
+
 test("clic sur une machine : fiche résumée et lien vers le back-office", async ({ page }) => {
   await openMap(page, "direction");
   await page.waitForTimeout(4000); // fin du survol d'introduction

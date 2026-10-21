@@ -11,6 +11,7 @@ const input: SectorConfigInput = {
     city: "Bordeaux",
     country: "FR",
     timezone: "Europe/Paris",
+    coordinates: { lat: 44.84, lon: -0.58 },
     locale: "fr-FR",
     currency: "EUR",
     vatRate: 0.2,

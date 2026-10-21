@@ -171,8 +171,9 @@ export function ScenarioBar() {
   const canEdit = useMap((s) => s.canEdit);
   const editMode = useMap((s) => s.editMode);
   const quality = useMap((s) => s.quality);
+  const timeMode = useMap((s) => s.timeMode);
   const fps = useMap((s) => s.fps);
-  const { setEditMode, setQuality, addToast } = useMap.getState();
+  const { setEditMode, setQuality, setTimeMode, addToast } = useMap.getState();
   const [active, setActive] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const stopRef = useRef(false);
@@ -234,6 +235,15 @@ export function ScenarioBar() {
             ✎ {t("edit")}
           </button>
         )}
+        <button
+          onClick={() => setTimeMode(timeMode === "auto" ? "day" : timeMode === "day" ? "night" : "auto")}
+          data-testid="time-toggle"
+          data-mode={timeMode}
+          className="rounded-lg bg-white/8 px-2.5 py-1.5 text-xs whitespace-nowrap hover:bg-white/15"
+          title={t("timeTitle")}
+        >
+          {timeMode === "auto" ? `◐ ${t("timeAuto")}` : timeMode === "day" ? `☀ ${t("timeDay")}` : `☾ ${t("timeNight")}`}
+        </button>
         <button
           onClick={() => setQuality(quality === "high" ? "low" : "high", true)}
           data-testid="quality-toggle"

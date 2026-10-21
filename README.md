@@ -44,6 +44,10 @@ personnes et appareils viennent de la base et de la fiche secteur.
 - **Qualité** : « Cinéma » (ombres, bloom, vignettage) ou « Rapide » ; compteur d'images/s dans la barre ;
   bascule automatique en « Rapide » sous 30 i/s pendant 5 s. `?q=cinema` impose la qualité maximale
   (tournage de démo), `?q=rapide` la qualité légère.
+- **Jour / nuit** : soleil calculé à l'heure réelle du site (coordonnées de la fiche secteur,
+  `company.coordinates`) — ciel, ombres et teinte de la lumière suivent la journée ; la nuit, intérieurs
+  éclairés, lampadaires, balisage de piste et reflets sur la Garonne. Le bouton « Heure réelle / Jour / Nuit »
+  impose une ambiance (démonstration en journée d'une vue de nuit, et inversement).
 
 ## Back-office — Commercial (`/crm`)
 

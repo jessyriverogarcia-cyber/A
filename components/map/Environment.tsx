@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { M, mat } from "./materials";
+import { daylight } from "./DayNight";
 import { PLINTH } from "@/lib/map/theme";
 import { hashSeed, rectOf, seeded, type Rect } from "@/lib/map/layout";
 import type { MapZone } from "@/lib/map/types";
@@ -61,28 +62,39 @@ export function Plinth({ bounds }: { bounds: Rect }) {
 
 const waterVertex = /* glsl */ `
   uniform float uTime;
-  varying vec2 vUv;
   varying float vWave;
+  varying vec3 vWorld;
   void main() {
-    vUv = uv;
     vec3 p = position;
-    float w = sin(p.x * 0.35 + uTime * 1.2) * 0.12 + sin(p.y * 0.5 + uTime * 0.8) * 0.08;
+    vec4 w0 = modelMatrix * vec4(p, 1.0);
+    float w = sin(dot(w0.xz, vec2(0.31, 0.12)) + uTime * 1.1) * 0.1 + sin(dot(w0.xz, vec2(-0.14, 0.42)) + uTime * 0.75) * 0.07;
     p.z += w;
     vWave = w;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    vec4 wp = modelMatrix * vec4(p, 1.0);
+    vWorld = wp.xyz;
+    gl_Position = projectionMatrix * viewMatrix * wp;
   }
 `;
 const waterFragment = /* glsl */ `
   uniform float uTime;
-  varying vec2 vUv;
+  uniform float uNight;
   varying float vWave;
+  varying vec3 vWorld;
   void main() {
-    vec3 deep = vec3(0.09, 0.33, 0.43);
-    vec3 shallow = vec3(0.24, 0.58, 0.65);
-    float ripple = sin(vUv.x * 140.0 + uTime * 1.6 + sin(vUv.y * 35.0) * 1.5) * sin(vUv.y * 120.0 - uTime * 1.1);
-    float glint = smoothstep(0.82, 1.0, ripple);
-    vec3 c = mix(deep, shallow, clamp(0.55 + vWave * 1.2, 0.35, 0.8)) + glint * 0.18;
-    gl_FragColor = vec4(c, 0.94);
+    // Trois trains de vagues d'orientations et de vitesses différentes : pas de motif en damier.
+    vec2 p = vWorld.xz;
+    p += vec2(sin(p.y * 0.13 + uTime * 0.2), cos(p.x * 0.11 - uTime * 0.15)) * 2.5; // déformation douce : casse la régularité
+    float r = sin(dot(p, vec2(0.93, 0.36)) * 1.3 + uTime * 1.4) * 0.5
+            + sin(dot(p, vec2(-0.39, 0.92)) * 2.3 - uTime * 1.05) * 0.32
+            + sin(dot(p, vec2(0.71, -0.70)) * 3.9 + uTime * 2.1 + sin(p.x * 0.21) * 2.0) * 0.18;
+    float glint = smoothstep(0.66, 0.98, r) * mix(1.0, 0.6, uNight);
+    vec3 deep = mix(vec3(0.09, 0.33, 0.43), vec3(0.02, 0.06, 0.11), uNight);
+    vec3 shallow = mix(vec3(0.24, 0.58, 0.65), vec3(0.06, 0.13, 0.2), uNight);
+    vec3 spark = mix(vec3(0.2), vec3(0.55, 0.42, 0.24), uNight); // reflets du ciel, ou des lampadaires la nuit
+    vec3 c = mix(deep, shallow, clamp(0.55 + vWave * 1.6 + r * 0.08, 0.3, 0.85)) + glint * spark;
+    // Couleurs pensées en sRGB : passage en linéaire puis conversion de sortie du moteur (mêmes teintes avec ou sans post-traitement)
+    gl_FragColor = vec4(pow(c, vec3(2.2)), 0.94);
+    #include <colorspace_fragment>
   }
 `;
 
@@ -90,10 +102,12 @@ const waterFragment = /* glsl */ `
 export function Water({ rect }: { rect: Rect }) {
   const ref = useRef<THREE.ShaderMaterial>(null);
   useFrame(({ clock }) => {
-    if (ref.current) ref.current.uniforms.uTime.value = clock.elapsedTime;
+    if (!ref.current) return;
+    ref.current.uniforms.uTime.value = clock.elapsedTime;
+    ref.current.uniforms.uNight.value = daylight.nightness;
   });
   const [x1, z1, x2, z2] = rect;
-  const uniforms = useMemo(() => ({ uTime: { value: 0 } }), []);
+  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uNight: { value: 0 } }), []);
   return (
     <group userData={{ noMerge: true }}>
       <mesh position={[(x1 + x2) / 2, -0.15, (z1 + z2) / 2]} material={mat("#0d3442")}>
@@ -251,10 +265,6 @@ export function HangarArches({ zones }: { zones: MapZone[] }) {
       ))}
     </group>
   );
-}
-
-export function Sky() {
-  return <color attach="background" args={["#cfd9e3"]} />;
 }
 
 export { THREE };

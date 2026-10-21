@@ -15,6 +15,7 @@ import type {
   SiteSnapshot,
   Vec3,
 } from "./types";
+import type { TimeMode } from "./daylight";
 
 export type EffectKind = "pulse" | "sparkle" | "halo_ok" | "halo_ko" | "alert" | "depart" | "takeoff";
 export interface Effect {
@@ -65,6 +66,8 @@ interface MapState {
   fps: number;
   /** Choix manuel de qualité : la bascule automatique ne s'applique plus. */
   qualityLocked: boolean;
+  /** Éclairage : heure réelle du site, ou jour / nuit imposés. */
+  timeMode: TimeMode;
 
   init(s: SiteSnapshot): void;
   select(s: Selection | null, focus?: Vec3 | null): void;
@@ -88,6 +91,7 @@ interface MapState {
   markDeparted(woId: string, kind: EffectKind): void;
   setQuality(q: "high" | "low", manual?: boolean): void;
   setFps(fps: number): void;
+  setTimeMode(m: TimeMode): void;
 }
 
 let uid = 0;
@@ -119,6 +123,7 @@ export const useMap = create<MapState>((set, get) => ({
   quality: "high",
   fps: 0,
   qualityLocked: false,
+  timeMode: "auto",
 
   init: (s) =>
     set({
@@ -186,6 +191,7 @@ export const useMap = create<MapState>((set, get) => ({
   markDeparted: (woId, kind) => set((st) => ({ departed: { ...st.departed, [woId]: { kind, at: performance.now() } } })),
   setQuality: (quality, manual) => set((st) => ({ quality, qualityLocked: st.qualityLocked || !!manual })),
   setFps: (fps) => set({ fps }),
+  setTimeMode: (timeMode) => set({ timeMode }),
 }));
 
 /** Position effective d'un objet (brouillon d'édition prioritaire). */

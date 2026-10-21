@@ -37,8 +37,12 @@ export function eventLabel(type: string) {
       "candidate.hired": "Recrutement",
       "message.received": "Nouveau message",
       "message.sent": "Réponse envoyée",
+      "invoice.dunning": "Relance de facture",
+      "user.invited": "Utilisateur invité",
+      "integration.connected": "Messagerie connectée",
+      "integration.disconnected": "Messagerie déconnectée",
     } as Record<string, string>
-  )[type] ?? type;
+  )[type] ?? "Activité";
 }
 
 function describe(e: MapEvent): { title: string; body: string; tone: "info" | "ok" | "warn" | "danger" } {

@@ -22,6 +22,7 @@ La section 11 du prompt maître étant tronquée, cette liste reprend les exigen
 | Objets cliquables, fiches, liens profonds vers le back-office (et retour) | ✅ | e2e phase 2 |
 | 8 événements live animés, temps réel bidirectionnel | ✅ | Realtime + scénario (démo uniquement) |
 | Mode édition du plan | ✅ | glisser / pivoter / enregistrer, droit `map:update` |
+| Cycle jour / nuit à l'heure réelle du site | ✅ | position du soleil testée (solstices à Bordeaux), bascule Heure réelle / Jour / Nuit en e2e ; captures `docs/screens/14-…`, `15-…` |
 | 60 fps | 🟡 | qualité adaptative et fusion des maillages ; mesuré seulement en WebGL logiciel (SwiftShader), non représentatif d'un vrai GPU |
 
 ## Back-office

@@ -14,6 +14,8 @@ import { AircraftFleet, DepartingTruck, MapObjects } from "./Objects";
 import { People } from "./People";
 import { Effects } from "./Effects";
 import { LabelProjector } from "./hud/Labels";
+import { DayNight, daylight } from "./DayNight";
+import { NightLights } from "./NightLights";
 
 const snap = (v: number) => Math.round(v * 2) / 2;
 
@@ -59,6 +61,7 @@ function TestProbe() {
         });
         return { calls: gl.info.render.calls, triangles: gl.info.render.triangles, meshes };
       },
+      daylight: () => ({ ...daylight }),
       objects: () => Object.values(useMap.getState().objects).map((o) => ({ id: o.id, kit: o.kit, entity: o.entity_id, ...o.position })),
     };
   }, [camera, size, gl, scene]);
@@ -124,6 +127,7 @@ function World() {
         <Plinth bounds={bounds} />
         <Zones zones={zones} furniture={furniture} />
       </StaticMerge>
+      <NightLights zones={zones} bounds={bounds} />
       <MapObjects objects={objects} />
       <People zones={zones} objects={objects} furniture={furniture} />
       <AircraftFleet />
@@ -136,38 +140,6 @@ function World() {
       {editMode && <DragPlane />}
       {editMode && <gridHelper args={[400, 400, "#38bdf8", "#7dd3fc"]} position={[(bounds[0] + bounds[2]) / 2, 0.13, (bounds[1] + bounds[3]) / 2]} />}
     </>
-  );
-}
-
-/** Soleil de fin d'après-midi, ombres douces ; la cible est ajoutée à la scène pour viser le site. */
-function Sun({ cx, cz, size, shadows }: { cx: number; cz: number; size: number; shadows: boolean }) {
-  const ref = useRef<THREE.DirectionalLight>(null);
-  const scene = useThree((s) => s.scene);
-  useEffect(() => {
-    const light = ref.current;
-    if (!light) return;
-    light.target.position.set(cx, 0, cz);
-    scene.add(light.target);
-    return () => {
-      scene.remove(light.target);
-    };
-  }, [cx, cz, scene]);
-  return (
-    <directionalLight
-      ref={ref}
-      castShadow={shadows}
-      position={[cx - size * 0.5, size * 0.8, cz + size * 0.35]}
-      intensity={2.4}
-      color="#ffe3c2"
-      shadow-mapSize={[2048, 2048]}
-      shadow-camera-left={-size * 0.75}
-      shadow-camera-right={size * 0.75}
-      shadow-camera-top={size * 0.75}
-      shadow-camera-bottom={-size * 0.75}
-      shadow-camera-far={size * 3}
-      shadow-bias={-0.0004}
-      shadow-normalBias={0.04}
-    />
   );
 }
 
@@ -191,11 +163,7 @@ export default function Scene() {
       onPointerMissed={() => !editMode && select(null, null)}
       data-testid="map-canvas"
     >
-      <color attach="background" args={["#c9d4de"]} />
-      <fog attach="fog" args={["#c9d4de", size * 1.6, size * 4.2]} />
-      <hemisphereLight args={["#dbe7ff", "#6b5a4a", 0.9]} />
-      <ambientLight intensity={0.25} />
-      <Sun cx={cx} cz={cz} size={size} shadows={high} />
+      <DayNight cx={cx} cz={cz} size={size} shadows={high} />
       <World />
       {high && (
         <EffectComposer multisampling={4}>
