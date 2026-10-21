@@ -30,7 +30,7 @@ La section 11 du prompt maître étant tronquée, cette liste reprend les exigen
 | --- | --- | --- |
 | Commercial | ✅ | — |
 | Production | ✅ | — |
-| Finance | ✅ | Factur-X / facture électronique (obligation 2026-2027) ⛔ |
+| Finance | ✅ / 🟡 | Factur-X : XML CII profil EN 16931 généré, **validé contre le XSD officiel**, joint au PDF (relation « Alternative », métadonnées fx). Non faits : certification PDF/A-3 du PDF, règles Schematron (moteur XSLT 2.0 absent ici), transmission par une plateforme agréée (PDP) exigée par la réforme |
 | Ressources & stock | ✅ | fournisseurs (fiche, taux de service, archivage) et réception partielle faits |
 | RH et Mon espace | ✅ | RTT (horaire au-delà de 35 h, forfait jours) avec solde et contrôle des demandes |
 | Notes de frais | ✅ | saisie (montant ou km, justificatif photo/PDF), politique de frais (plafonds, TVA, ancienneté), validation en lot, paie, refacturation au client |

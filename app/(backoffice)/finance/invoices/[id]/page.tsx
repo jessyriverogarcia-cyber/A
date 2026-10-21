@@ -84,6 +84,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
         actions={
           <>
             <a href={`/finance/invoices/${inv.id}/pdf`} target="_blank" className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" data-testid="invoice-pdf">PDF</a>
+            {inv.status !== "draft" && <a href={`/finance/invoices/${inv.id}/xml`} className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" data-testid="invoice-xml" title="Facture structurée CII (EN 16931), aussi jointe au PDF">XML Factur-X</a>}
             {draft && can(ctx, "finance", "delete") && (
               <form action={deleteDraftAction}>
                 <input type="hidden" name="invoice_id" value={inv.id} />

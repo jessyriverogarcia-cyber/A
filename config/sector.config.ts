@@ -22,6 +22,7 @@ const input: SectorConfigInput = {
       address: "12 rue des Fictions, 33000 Bordeaux",
       registration: "SAS au capital de 250 000 € · RCS Bordeaux 000 000 000 (fictif)",
       vatNumber: "FR00 000000000",
+      siren: "000000000",
       email: "contact@strato-fab.test",
       phone: "+33 5 00 00 00 00",
       iban: "FR76 0000 0000 0000 0000 0000 000",

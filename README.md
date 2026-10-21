@@ -214,4 +214,4 @@ le nombre de lignes visibles par table (RLS) et le flux `activity_events` en tem
 
 **Ce qui reste simulé ou à faire** (détail dans `docs/RECETTE.md`) : sans clés, l'IA et l'envoi d'e-mails
 sont simulés et affichés comme tels ; la synchronisation des agendas, la réception des e-mails entrants,
-le SSO de connexion et Factur-X ne sont pas faits.
+et le SSO de connexion ne sont pas faits ; Factur-X est partiel (XML EN 16931 validé, PDF non certifié PDF/A-3, pas de transmission PDP).

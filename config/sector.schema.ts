@@ -126,6 +126,8 @@ export const SectorConfigSchema = z.object({
       address: z.string().min(1),
       registration: z.string().min(1),
       vatNumber: z.string().min(1),
+      /** SIREN (9 chiffres) : identifiant légal du vendeur sur les factures électroniques. */
+      siren: z.string().regex(/^\d{9}$/).optional(),
       email: z.string().email(),
       phone: z.string().min(1),
       iban: z.string().optional(),
