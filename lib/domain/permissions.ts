@@ -32,8 +32,8 @@ const R: Action[] = ["read"];
 const RW: Action[] = ["read", "create", "update"];
 const RWD: Action[] = ["read", "create", "update", "delete"];
 
-/** Base commune : tout le monde voit la map, l'annuaire, la présence, le planning. */
-const base: Matrix = { map: R, people: R, presence: R, planning: R, ai: R };
+/** Base commune : tout le monde voit la map (avec ses machines et son stock), l'annuaire, la présence, le planning. */
+const base: Matrix = { map: R, people: R, presence: R, planning: R, resources: R, ai: R };
 
 const MATRIX: Record<string, Matrix> = {
   direction: Object.fromEntries(MODULES.map((m) => [m, "all"])) as Matrix,

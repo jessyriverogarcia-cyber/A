@@ -3,13 +3,14 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { sectorConfig } from "@/config/sector.config";
 import { DEMO_ACCOUNTS, demoEmail, isDemoMode } from "@/lib/demo";
 
 export type AuthState = { error?: string; info?: string } | undefined;
 
 const safeNext = (next: FormDataEntryValue | null) => {
   const n = typeof next === "string" ? next : "";
-  return n.startsWith("/") && !n.startsWith("//") ? n : "/";
+  return n.startsWith("/") && !n.startsWith("//") && n !== "/" ? n : `/map/${sectorConfig.sites[0].id}`;
 };
 
 /** Après une connexion par mot de passe : si un facteur TOTP existe, on exige le code. */

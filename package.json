@@ -18,6 +18,9 @@
     "check:config": "tsx -e \"import('./config/sector.config.ts').then(m => console.log('OK —', m.sectorConfig.company.name, '·', m.sectorConfig.sites.length, 'sites ·', m.sectorConfig.workOrder.stages.length, 'étapes'))\""
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
+    "@react-three/postprocessing": "^3.2.1",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "@tanstack/react-query": "^5.104.5",
@@ -25,9 +28,11 @@
     "date-fns": "^4.4.0",
     "next": "^15.5.28",
     "next-intl": "^4.14.9",
+    "postprocessing": "^6.39.5",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "server-only": "^0.0.1",
+    "three": "^0.186.1",
     "zod": "^3.25.76",
     "zustand": "^5.0.15"
   },
@@ -38,6 +43,7 @@
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^15.5.28",
     "postcss": "^8.5.31",

@@ -30,6 +30,8 @@ test("direction : voit tout, temps réel bidirectionnel", async ({ page }) => {
   const counts = page.getByTestId("tech-counts");
   await expect(counts.getByText("employee_salaries").locator("..")).toContainText("24");
   await expect(page.getByTestId("realtime-status")).toContainText("Connecté");
+  // Supabase annonce l'abonnement un peu avant que l'écoute des changements Postgres soit active.
+  await page.waitForTimeout(1500);
   const before = await page.getByTestId("realtime-list").locator("li").count();
   await page.getByTestId("realtime-emit").click();
   await expect(page.getByTestId("realtime-list").locator("li")).toHaveCount(before + 1);
@@ -37,7 +39,7 @@ test("direction : voit tout, temps réel bidirectionnel", async ({ page }) => {
   await page.screenshot({ path: "test-results/screens/02-tech-direction.png", fullPage: true });
 
   await page.goto("/map/campus");
-  await expect(page.getByTestId("kpi-machines_active")).toBeVisible();
+  await expect(page.getByTestId("hud-kpi-machines_active")).toBeVisible({ timeout: 60_000 });
   await page.screenshot({ path: "test-results/screens/03-map-campus.png", fullPage: true });
   expect(errors).toEqual([]);
 });

@@ -9,6 +9,7 @@ import { computeQuoteTotals, formatDocumentNumber } from "../lib/domain/quote";
 import { computeVat, fromCents, toCents } from "../lib/domain/money";
 import { overallProgress } from "../lib/domain/workOrder";
 import { DEMO_DOMAIN, demoEmail } from "../lib/demo";
+import { packInZone } from "../lib/map/kits";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -280,15 +281,15 @@ async function main() {
     ...Array.from({ length: 2 }, (_, i) => ({ code: `MET-0${i + 1}`, name: `SLM métal ${i + 1}`, kind: "machine", technology: "metal", zone: "atex_metal", specs: { laser: "2×700 W", gas: "argon" } })),
     { code: "GANTRY-01", name: "Portique grand format Alpha", kind: "machine", technology: "gantry", zone: "gantry_bay", specs: { volume: "24×6×4 m" } },
     { code: "GANTRY-02", name: "Portique grand format Bêta", kind: "machine", technology: "gantry", zone: "gantry_bay", specs: { volume: "18×5×4 m" } },
-    { code: "DEP-01", name: "Station de dépoudrage", kind: "equipment", zone: "post_processing" },
-    { code: "CUR-01", name: "Four de polymérisation UV", kind: "equipment", zone: "post_processing" },
-    { code: "SAB-01", name: "Cabine de microbillage", kind: "equipment", zone: "post_processing" },
-    { code: "TTH-01", name: "Four de traitement thermique", kind: "equipment", zone: "atex_metal" },
-    { code: "ATEX-ARM", name: "Armoire sécurisée poudres métalliques", kind: "equipment", zone: "atex_metal", specs: { classement: "ATEX zone 22" } },
+    { code: "DEP-01", name: "Station de dépoudrage", kind: "equipment", zone: "post_processing", specs: { visual: "glovebox" } },
+    { code: "CUR-01", name: "Four de polymérisation UV", kind: "equipment", zone: "post_processing", specs: { visual: "oven_uv" } },
+    { code: "SAB-01", name: "Cabine de microbillage", kind: "equipment", zone: "post_processing", specs: { visual: "blast" } },
+    { code: "TTH-01", name: "Four de traitement thermique", kind: "equipment", zone: "atex_metal", specs: { visual: "oven" } },
+    { code: "ATEX-ARM", name: "Armoire sécurisée poudres métalliques", kind: "equipment", zone: "atex_metal", specs: { classement: "ATEX zone 22", visual: "safety_cabinet" } },
     ...Array.from({ length: 4 }, (_, i) => ({ code: `CAO-0${i + 1}`, name: `Poste CAO ${i + 1}`, kind: "workstation", zone: "cad_office" })),
-    { code: "CMM-01", name: "Machine à mesurer tridimensionnelle", kind: "equipment", zone: "quality_lab" },
-    { code: "SCAN-01", name: "Scanner 3D de contrôle", kind: "equipment", zone: "quality_lab" },
-    { code: "CT-01", name: "Tomographe CND", kind: "equipment", zone: "hangar_quality" },
+    { code: "CMM-01", name: "Machine à mesurer tridimensionnelle", kind: "equipment", zone: "quality_lab", specs: { visual: "cmm" } },
+    { code: "SCAN-01", name: "Scanner 3D de contrôle", kind: "equipment", zone: "quality_lab", specs: { visual: "scanner" } },
+    { code: "CT-01", name: "Tomographe CND", kind: "equipment", zone: "hangar_quality", specs: { visual: "ct" } },
     { code: "SALLE-GAR", name: "Salle Garonne", kind: "room", zone: "meeting_room", specs: { seats: 10, screen: true } },
     { code: "BADGE-ACC", name: "Badgeuse accueil", kind: "badge_reader", zone: "reception" },
     { code: "BADGE-ATEX", name: "Lecteur porte ATEX", kind: "badge_reader", zone: "atex_metal" },
@@ -353,43 +354,39 @@ async function main() {
   );
 
   // --- objets de la map (machines, postes, rayonnages) -----------------
-  const perZone: Record<string, number> = {};
-  const mapObjects = assets.map((a) => {
-    const zk = zones.find((z) => z.id === a.zone_id)!.key as string;
-    const n = (perZone[zk] = (perZone[zk] ?? -1) + 1);
-    const [x1, z1, x2] = rects[zk];
-    const cols = Math.max(1, Math.floor((x2 - x1) / 6));
-    return {
-      org_id,
-      site_id: a.site_id,
-      zone_id: a.zone_id,
-      type: a.kind,
-      kit: a.technology ? cfg.technologies.find((t) => t.id === a.technology)!.kit : a.kind,
-      position: { x: x1 + 3 + (n % cols) * 6, y: 0, z: z1 + 3 + Math.floor(n / cols) * 6 },
-      rotation: 0,
-      scale: 1,
-      entity_type: "asset",
-      entity_id: a.id,
-      visual_state: a.status,
-    };
-  });
-  const racks = stock.map((s, i) => {
-    const zk = zones.find((z) => z.id === s.location_zone_id)!.key as string;
-    const [x1, , , z2] = rects[zk];
-    return {
-      org_id,
-      site_id: zoneSite(zk),
-      zone_id: s.location_zone_id,
-      type: "stock",
-      kit: "rack",
-      position: { x: x1 + 1.5 + (i % 5) * 2.2, y: 0, z: z2 - 1.5 },
-      rotation: 0,
-      scale: 1,
-      entity_type: "stock_item",
-      entity_id: s.id,
-      visual_state: Number(s.quantity) < Number(s.min_quantity) ? "low" : "ok",
-    };
-  });
+  // Placement initial en rangées par zone ; modifiable ensuite dans le mode édition du plan.
+  const kitOf = (a: Row) => (a.technology ? cfg.technologies.find((t) => t.id === a.technology)!.kit : a.kind);
+  const zoneKeyOf = (zoneId: string) => zones.find((z) => z.id === zoneId)!.key as string;
+  const mapObjects: Row[] = [];
+  for (const zk of new Set(assets.map((a) => zoneKeyOf(a.zone_id)))) {
+    // Les badgeuses vont près de l'entrée de zone, le reste est rangé.
+    const inZone = assets.filter((a) => zoneKeyOf(a.zone_id) === zk);
+    const placed = inZone.filter((a) => a.kind !== "badge_reader");
+    const centers = packInZone(rects[zk], placed.map(kitOf));
+    for (const [i, a] of inZone.entries()) {
+      const j = placed.indexOf(a);
+      const [x1, , , z2] = rects[zk];
+      const position = j >= 0 ? centers[j] : { x: x1 + 0.8, y: 0, z: z2 - 0.8 - i * 0.1 };
+      mapObjects.push({
+        org_id, site_id: a.site_id, zone_id: a.zone_id, type: a.kind, kit: kitOf(a), position,
+        rotation: 0, scale: 1, entity_type: "asset", entity_id: a.id, visual_state: a.status,
+      });
+    }
+  }
+  const racks: Row[] = [];
+  for (const zk of new Set(stock.map((s) => zoneKeyOf(s.location_zone_id)))) {
+    const inZone = stock.filter((s) => zoneKeyOf(s.location_zone_id) === zk);
+    const [x1, , x2, z2] = rects[zk];
+    // Rayonnages alignés contre le mur du fond de la zone.
+    const centers = packInZone([x1, z2 - 2.2, x2, z2], inZone.map(() => "rack"), 0.6);
+    inZone.forEach((s, i) =>
+      racks.push({
+        org_id, site_id: zoneSite(zk), zone_id: s.location_zone_id, type: "stock", kit: "rack",
+        position: centers[i], rotation: 0, scale: 1, entity_type: "stock_item", entity_id: s.id,
+        visual_state: Number(s.quantity) < Number(s.min_quantity) ? "low" : "ok",
+      }),
+    );
+  }
   await insert("map_objects", [...mapObjects, ...racks]);
 
   // --- commercial ------------------------------------------------------
@@ -460,13 +457,15 @@ async function main() {
   type Proj = {
     client: string; title: string; family: string; tech: string; machine?: string; stage: string; stageProgress: number;
     lines: [sku: string, qty: number][]; quote: "draft" | "sent" | "accepted" | "rejected"; due: number; priority?: string; owner: string; physical: string;
+    /** Apparence 3D de l'appareil (familles aéro), lue par la Map. */
+    model?: { type: "oblique_jet" | "flying_wing"; variant?: string; rockets?: number[] };
   };
   const projects: Proj[] = [
-    { client: "Cargo Céleste", title: "Tronçon de fuselage T3 — supersonique aile oblique (cargo)", family: "oblique_wing_supersonic", tech: "gantry", machine: "GANTRY-01", stage: "printing", stageProgress: 62, lines: [["IMP-GNT-H", 180], ["MAT-COMP", 2400], ["CAO-H", 120], ["CQ-CT", 6], ["CQ-DOC", 1]], quote: "accepted", due: 34, priority: "high", owner: "Inès", physical: "Tronçon de fuselage T3 (14 m)" },
-    { client: "Aquila Jets Privés", title: "Démonstrateur jet privé aile oblique AQ-1", family: "oblique_wing_supersonic", tech: "gantry", machine: "GANTRY-02", stage: "post_processing", stageProgress: 30, lines: [["IMP-GNT-H", 260], ["MAT-COMP", 3100], ["ASM-AERO", 400], ["CQ-DOC", 1]], quote: "accepted", due: 21, priority: "urgent", owner: "Élise", physical: "Jet privé AQ-1 (démonstrateur complet)" },
+    { client: "Cargo Céleste", title: "Tronçon de fuselage T3 — supersonique aile oblique (cargo)", family: "oblique_wing_supersonic", tech: "gantry", machine: "GANTRY-01", stage: "printing", stageProgress: 62, lines: [["IMP-GNT-H", 180], ["MAT-COMP", 2400], ["CAO-H", 120], ["CQ-CT", 6], ["CQ-DOC", 1]], quote: "accepted", due: 34, priority: "high", owner: "Inès", physical: "Tronçon de fuselage T3 (14 m)", model: { type: "oblique_jet", variant: "cargo" } },
+    { client: "Aquila Jets Privés", title: "Démonstrateur jet privé aile oblique AQ-1", family: "oblique_wing_supersonic", tech: "gantry", machine: "GANTRY-02", stage: "post_processing", stageProgress: 30, lines: [["IMP-GNT-H", 260], ["MAT-COMP", 3100], ["ASM-AERO", 400], ["CQ-DOC", 1]], quote: "accepted", due: 21, priority: "urgent", owner: "Élise", physical: "Jet privé AQ-1 (démonstrateur complet)", model: { type: "oblique_jet", variant: "private" } },
     { client: "Ligne Mach Atlantique", title: "Aile pivotante — maquette soufflerie 1:20 (version ligne)", family: "wind_tunnel_models", tech: "sla", machine: "SLA-01", stage: "quality", stageProgress: 50, lines: [["IMP-SLA-H", 46], ["CAO-H", 30], ["PT-STD", 12], ["CQ-DOC", 1]], quote: "accepted", due: 5, owner: "Nadia", physical: "Maquette soufflerie 1:20" },
-    { client: "Orbitale Lancements", title: "Hydravion aile volante HV-2 — porte-fusée orbitale", family: "flying_wing_seaplane", tech: "gantry", stage: "slicing", stageProgress: 70, lines: [["IMP-GNT-H", 420], ["MAT-COMP", 5200], ["ASM-AERO", 900], ["CAO-H", 260], ["CQ-DOC", 1]], quote: "accepted", due: 75, priority: "high", owner: "Mathis", physical: "Hydravion HV-2 (envergure 62 m)" },
-    { client: "Hydro Lanceurs du Golfe", title: "Hydravion HV-1 — essais de largage double fusée", family: "flying_wing_seaplane", tech: "gantry", stage: "shipping", stageProgress: 40, lines: [["ASM-AERO", 320], ["CQ-CT", 10], ["CQ-DOC", 1]], quote: "accepted", due: 1, priority: "urgent", owner: "Élise", physical: "Hydravion HV-1 sur la cale" },
+    { client: "Orbitale Lancements", title: "Hydravion aile volante HV-2 — porte-fusée orbitale", family: "flying_wing_seaplane", tech: "gantry", stage: "slicing", stageProgress: 70, lines: [["IMP-GNT-H", 420], ["MAT-COMP", 5200], ["ASM-AERO", 900], ["CAO-H", 260], ["CQ-DOC", 1]], quote: "accepted", due: 75, priority: "high", owner: "Mathis", physical: "Hydravion HV-2 (envergure 62 m)", model: { type: "flying_wing", rockets: [1.6] } },
+    { client: "Hydro Lanceurs du Golfe", title: "Hydravion HV-1 — essais de largage double fusée", family: "flying_wing_seaplane", tech: "gantry", stage: "shipping", stageProgress: 40, lines: [["ASM-AERO", 320], ["CQ-CT", 10], ["CQ-DOC", 1]], quote: "accepted", due: 1, priority: "urgent", owner: "Élise", physical: "Hydravion HV-1 sur la cale", model: { type: "flying_wing", rockets: [1, 1] } },
     { client: "Héliance Aéro", title: "Injecteurs carburant Inconel — lot 40", family: "aero_parts", tech: "metal", machine: "MET-01", stage: "printing", stageProgress: 85, lines: [["IMP-MET-H", 38], ["MAT-TI64", 6], ["PT-TTH", 2], ["CQ-CT", 4], ["CQ-DOC", 1]], quote: "accepted", due: 9, owner: "Tom", physical: "40 injecteurs Inconel 718" },
     { client: "Valmy Turbines", title: "Aubes de turbine — prototype Ti6Al4V", family: "aero_parts", tech: "metal", machine: "MET-02", stage: "printing", stageProgress: 20, lines: [["IMP-MET-H", 52], ["MAT-TI64", 9], ["PT-TTH", 1], ["CQ-CT", 3]], quote: "accepted", due: 16, owner: "Tom", physical: "12 aubes Ti6Al4V" },
     { client: "Médicor Implants", title: "Implants de hanche sur mesure — série 3", family: "medical", tech: "metal", stage: "feasibility", stageProgress: 40, lines: [["IMP-MET-H", 24], ["MAT-TI64", 2], ["CQ-DOC", 1]], quote: "accepted", due: 28, owner: "Nadia", physical: "6 cupules Ti6Al4V" },
@@ -563,7 +562,7 @@ async function main() {
         hours_budget: hoursBudget,
         due_date: day(p.due),
         priority: p.priority ?? "normal",
-        traceability: { lot_matiere: `LOT-${year}-${String(pi * 37 + 101).padStart(4, "0")}`, norme: p.family === "medical" ? "ISO 13485" : p.family.includes("aero") || p.family.includes("wing") || p.family.includes("seaplane") ? "EN 9100" : "ISO 9001" },
+        traceability: { ...(p.model ? { model: p.model } : {}), lot_matiere: `LOT-${year}-${String(pi * 37 + 101).padStart(4, "0")}`, norme: p.family === "medical" ? "ISO 13485" : p.family.includes("aero") || p.family.includes("wing") || p.family.includes("seaplane") ? "EN 9100" : "ISO 9001" },
       },
     ]);
     let t = at(issued + 3, 11);
@@ -675,8 +674,9 @@ async function main() {
   for (const e of employees) {
     if (absentToday.has(e.first_name as string)) continue;
     const zk = zones.find((z) => z.id === e.home_zone_id)!.key as string;
-    const arrive = at(0, 7, int(20, 75));
-    if (arrive > now) continue;
+    // Démo jouable à toute heure : avant l'ouverture, l'équipe est « arrivée » il y a quelques minutes.
+    let arrive = at(0, 7, int(20, 75));
+    if (arrive > now) arrive = new Date(now.getTime() - int(3, 40) * 60_000);
     badgeRows.push({ org_id, employee_id: e.id, kind: "in", reader: reader(zk), at: iso(arrive) });
     if (onBreak.has(e.first_name as string)) {
       const b = new Date(Math.max(arrive.getTime() + 60_000, now.getTime() - 8 * 60_000));
@@ -755,15 +755,15 @@ async function main() {
   });
   const w = (i: number) => wos![i];
   await insert("activity_events", [
-    ev("badge.in", 190, "employee", emp("Julien").id, { name: "Julien Ferrand", zone: "print_floor" }),
+    ev("badge.in", 190, "employee", emp("Julien").id, { personne: "Julien Ferrand", name: "Julien Ferrand" }),
     ev("work_order.stage", 150, "work_order", w(2).id, { number: w(2).number, to: "quality" }),
-    ev("asset.maintenance", 140, "asset", asset("FDM-05").id, { code: "FDM-05" }),
-    ev("stock.low", 120, "stock_item", stock.find((s) => s.sku === "POW-ALSI")!.id, { sku: "POW-ALSI", label: "Poudre AlSi10Mg" }),
+    ev("asset.maintenance", 140, "asset", asset("FDM-05").id, { code: "FDM-05", machine: "FDM-05" }),
+    ev("stock.low", 120, "stock_item", stock.find((s) => s.sku === "POW-ALSI")!.id, { sku: "POW-ALSI", label: "Poudre AlSi10Mg", matiere: "Poudre AlSi10Mg" }),
     ev("work_order.created", 95, "work_order", w(9).id, { number: w(9).number, client: "Clinique des Lauriers (fictive)" }),
-    ev("quote.accepted", 70, "quote", w(3).quote_id, { client: "Orbitale Lancements" }),
-    ev("work_order.qc", 45, "work_order", w(13).id, { number: w(13).number, result: "rejected", reason: "Écart de planéité 0,3 mm" }),
-    ev("work_order.stage.printing_done", 20, "work_order", w(10).id, { number: w(10).number, machine: "FDM-01" }),
-    ev("stock.low", 10, "stock_item", stock.find((s) => s.sku === "RES-BIO")!.id, { sku: "RES-BIO", label: "Résine biocompatible" }),
+    ev("quote.accepted", 70, "quote", w(3).quote_id, { client: "Orbitale Lancements", numero: "DEV-" + year + "-0004" }),
+    ev("work_order.qc", 45, "work_order", w(13).id, { number: w(13).number, of: w(13).number, result: "rejeté", reason: "Écart de planéité 0,3 mm" }),
+    ev("work_order.stage.printing_done", 20, "work_order", w(10).id, { number: w(10).number, machine: "FDM-01", piece: w(10).title, asset_id: asset("FDM-01").id }),
+    ev("stock.low", 10, "stock_item", stock.find((s) => s.sku === "RES-BIO")!.id, { sku: "RES-BIO", label: "Résine biocompatible", matiere: "Résine biocompatible classe IIa" }),
   ]);
   const { data: profiles } = await db.from("profiles").select("user_id").eq("org_id", org_id);
   await insert(

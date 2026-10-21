@@ -43,8 +43,8 @@ const input: SectorConfigInput = {
         { id: "atex_metal", label: "Zone métal ATEX", type: "restricted", capacity: 3, restricted: true },
       ],
       outdoor: [
-        { id: "parking", label: "Parking", type: "outdoor" },
-        { id: "dock", label: "Quai réception / expédition", type: "outdoor" },
+        { id: "parking", label: "Parking", type: "parking" },
+        { id: "dock", label: "Quai réception / expédition", type: "dock" },
       ],
     },
     {
@@ -61,7 +61,7 @@ const input: SectorConfigInput = {
         { id: "hangar_quality", label: "Contrôle CND / métrologie", type: "quality", capacity: 3 },
       ],
       outdoor: [
-        { id: "tarmac", label: "Tarmac & piste", type: "outdoor" },
+        { id: "tarmac", label: "Tarmac & piste", type: "runway" },
         { id: "slipway", label: "Cale de mise à l'eau (Garonne)", type: "water" },
       ],
     },
