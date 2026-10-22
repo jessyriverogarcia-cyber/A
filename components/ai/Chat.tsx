@@ -40,7 +40,11 @@ export function Chat({ conversationId, initial, simulated, suggestions }: { conv
   const conv = useRef(conversationId);
   const end = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [turns]);
+  // Corps entre accolades : scrollIntoView renvoie une promesse dans les Chromium récents, que React
+  // prendrait pour une fonction de nettoyage (plantage « u is not a function » au rendu suivant).
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [turns]);
 
   const patchLast = (f: (t: Turn) => Turn) => setTurns((ts) => [...ts.slice(0, -1), f(ts[ts.length - 1])]);
 
