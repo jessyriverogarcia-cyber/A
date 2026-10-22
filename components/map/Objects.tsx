@@ -13,6 +13,7 @@ import { Gantry } from "./kits/Gantry";
 import { BadgeReader, Equipment, Rack, RoomDisplay, Workstation } from "./kits/Equipment";
 import { Aircraft } from "./kits/Aircraft";
 import { Truck } from "./Environment";
+import { livePositions } from "@/lib/map/labels";
 
 function selectionOf(o: MapObject): Selection | null {
   if (o.entity_type === "asset" && o.entity_id) return { kind: "asset", id: o.entity_id };
@@ -192,6 +193,8 @@ function Plane({ wo, x, z, water, departedAt }: { wo: MapWorkOrder; x: number; z
       g.position.set(x + dist, water ? 0.2 + Math.max(0, t - 3.2) ** 2 * 1.6 : Math.max(0, t - 3) ** 2 * 1.8, z);
       g.rotation.z = t > 3 ? Math.min(0.25, (t - 3) * 0.12) : 0;
       g.visible = t < 14;
+      if (g.visible) livePositions.set(`plane:${wo.id}`, { x: g.position.x, y: g.position.y, z: g.position.z });
+      else livePositions.delete(`plane:${wo.id}`);
       return;
     }
     g.visible = !done;
@@ -230,13 +233,13 @@ export function DepartingTruck() {
   return (
     <group>
       {effects.map((e) => (
-        <MovingTruck key={e.id} x={e.position.x} z={e.position.z} bornAt={e.bornAt} />
+        <MovingTruck key={e.id} id={e.id} x={e.position.x} z={e.position.z} bornAt={e.bornAt} />
       ))}
     </group>
   );
 }
 
-function MovingTruck({ x, z, bornAt }: { x: number; z: number; bornAt: number }) {
+function MovingTruck({ id, x, z, bornAt }: { id: string; x: number; z: number; bornAt: number }) {
   const ref = useRef<Group>(null);
   useFrame(() => {
     const t = (performance.now() - bornAt) / 1000;
@@ -244,6 +247,8 @@ function MovingTruck({ x, z, bornAt }: { x: number; z: number; bornAt: number })
     ref.current.position.set(x + 4, 0.12, z + Math.min(t, 1.2) * 0 - t * t * 1.6);
     ref.current.rotation.y = Math.PI;
     ref.current.visible = t < 6;
+    if (ref.current.visible) livePositions.set(`fx:${id}`, { x: ref.current.position.x, y: 0, z: ref.current.position.z });
+    else livePositions.delete(`fx:${id}`);
   });
   return (
     <group ref={ref}>

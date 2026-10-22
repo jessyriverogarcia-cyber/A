@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import { mat } from "./materials";
@@ -8,7 +8,8 @@ import { SKIN, PRESENCE_LABEL } from "@/lib/map/theme";
 import { hashSeed, seeded, type Furniture, entranceOf, seatsInZoneType, stationsFor } from "@/lib/map/layout";
 import { useMap } from "@/lib/map/store";
 import { livePositions } from "@/lib/map/labels";
-import type { MapEmployee, MapObject, MapZone, Vec3 } from "@/lib/map/types";
+import type { MapEmployee, MapObject, MapZone, Selection, Vec3 } from "@/lib/map/types";
+import { visitorAvatar, visitorsOnSite } from "@/lib/map/visitors";
 import { footprint } from "@/lib/map/kits";
 
 const SPEED = 1.7; // m/s (légèrement accéléré pour la démo)
@@ -21,6 +22,8 @@ interface Look {
   bottom: string;
   accent?: string;
   hood?: boolean;
+  /** Badge « visiteur » porté en sautoir. */
+  badge?: boolean;
 }
 
 function lookFor(e: MapEmployee, zoneType: string | undefined): Look {
@@ -37,12 +40,14 @@ function Person({
   entrance,
   wander,
   look,
+  sel = { kind: "employee", id: e.id },
 }: {
   e: MapEmployee;
   target: Target;
   entrance: Vec3;
   wander: Vec3[];
   look: Look;
+  sel?: Selection;
 }) {
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
@@ -61,8 +66,8 @@ function Person({
     nextWander: 8 + rnd() * 30,
     dwell: 0,
   });
-  const selected = useMap((s) => s.selection?.kind === "employee" && s.selection.id === e.id);
-  const hovered = useMap((s) => s.hover?.kind === "employee" && s.hover.id === e.id);
+  const selected = useMap((s) => s.selection?.kind === sel.kind && s.selection.id === sel.id);
+  const hovered = useMap((s) => s.hover?.kind === sel.kind && s.hover.id === sel.id);
   const select = useMap((s) => s.select);
   const setHover = useMap((s) => s.setHover);
   const editMode = useMap((s) => s.editMode);
@@ -143,11 +148,11 @@ function Person({
       onClick={(ev) => {
         if (editMode) return;
         ev.stopPropagation();
-        select({ kind: "employee", id: e.id }, { x: st.current.pos.x, y: 0, z: st.current.pos.z });
+        select(sel, { x: st.current.pos.x, y: 0, z: st.current.pos.z });
       }}
       onPointerOver={(ev) => {
         ev.stopPropagation();
-        setHover({ kind: "employee", id: e.id });
+        setHover(sel);
         document.body.style.cursor = "pointer";
       }}
       onPointerOut={() => {
@@ -179,6 +184,16 @@ function Person({
           <mesh material={accent} position={[0, 1.12, 0]}>
             <boxGeometry args={[0.47, 0.08, 0.27]} />
           </mesh>
+        )}
+        {look.badge && (
+          <>
+            <mesh material={mat("#ff6b2c", { roughness: 0.6 })} position={[0, 1.36, 0.135]}>
+              <boxGeometry args={[0.2, 0.3, 0.01]} />
+            </mesh>
+            <mesh material={mat("#f8fafc", { emissive: "#f8fafc", emissiveIntensity: 0.4, roughness: 0.5 })} position={[0, 1.2, 0.145]}>
+              <boxGeometry args={[0.16, 0.11, 0.015]} />
+            </mesh>
+          </>
         )}
         {[
           [armL, -0.3],
@@ -248,6 +263,46 @@ export function People({ zones, objects, furniture }: { zones: MapZone[]; object
         const wander = !seatedAtStation ? (wanderByZone.get(e.home_zone_id ?? "") ?? []) : [];
         return <Person key={e.id} e={e} target={target} entrance={entrance} wander={wander} look={lookFor(e, zone?.type)} />;
       })}
+    </group>
+  );
+}
+
+const VISITOR_LOOK: Look = { top: "#2b3a55", bottom: "#1f2937", accent: "#e5e7eb", badge: true };
+
+/**
+ * Clients en visite : pendant un rendez-vous client de l'agenda, le contact du client arrive par
+ * l'accueil, rejoint la salle de réunion et repart à la fin. Rien n'est inventé : sans rendez-vous,
+ * personne n'apparaît.
+ */
+export function Visitors({ zones, furniture }: { zones: MapZone[]; furniture: Map<string, Furniture[]> }) {
+  const visitors = useMap((s) => s.visitors);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 20_000);
+    return () => clearInterval(t);
+  }, []);
+  const entrance = useMemo(() => entranceOf(zones), [zones]);
+  // Places prises depuis la fin : les salariés en réunion occupent les premières.
+  const seats = useMemo(() => {
+    const meeting = seatsInZoneType(zones, furniture, "meeting");
+    return (meeting.length ? meeting : seatsInZoneType(zones, furniture, "reception")).slice().reverse();
+  }, [zones, furniture]);
+  const present = useMemo(() => new Set(visitorsOnSite(visitors, now).map((v) => v.id)), [visitors, now]);
+  if (!visitors.length) return null;
+  const fallback = { x: entrance.x + 3, y: 0, z: entrance.z };
+  return (
+    <group>
+      {visitors.map((v, i) => (
+        <Person
+          key={v.id}
+          e={visitorAvatar(v)}
+          target={{ pos: seats[i % Math.max(seats.length, 1)] ?? fallback, seated: seats.length > 0, visible: present.has(v.id) }}
+          entrance={entrance}
+          wander={[]}
+          look={VISITOR_LOOK}
+          sel={{ kind: "visitor", id: v.id }}
+        />
+      ))}
     </group>
   );
 }

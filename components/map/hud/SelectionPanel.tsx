@@ -147,6 +147,29 @@ export function SelectionPanel() {
         {e.role_key && <Row label="Rôle">{sectorConfig.roles.find((r) => r.id === e.role_key)?.label ?? e.role_key}</Row>}
       </>
     );
+  } else if (sel.kind === "visitor") {
+    const v = st.visitors.find((x) => x.id === sel.id);
+    if (!v) return null;
+    const host = st.employees.find((e) => e.id === v.host_employee_id);
+    title = v.contact_name ?? v.client_name;
+    subtitle = `Visiteur · ${v.client_name}`;
+    href = `/crm/clients/${v.client_id}`;
+    const clientOrders = Object.values(st.workOrders).filter((w) => w.client_name === v.client_name && w.status === "active");
+    body = (
+      <>
+        <Row label="Rendez-vous">{v.title}</Row>
+        <Row label="Horaire">
+          {time(v.starts_at)} – {time(v.ends_at)}
+        </Row>
+        {host && <Row label="Reçu par">{host.first_name} {host.last_name}</Row>}
+        <Row label="Commandes en cours">{clientOrders.length}</Row>
+        {clientOrders.slice(0, 3).map((w) => (
+          <button key={w.id} onClick={() => st.select({ kind: "work_order", id: w.id })} className="mt-1.5 block w-full rounded-lg bg-white/5 px-2 py-1.5 text-left text-xs hover:bg-white/10">
+            {w.number} · {w.physical_object ?? w.title}
+          </button>
+        ))}
+      </>
+    );
   } else if (sel.kind === "work_order") {
     const wo = st.workOrders[sel.id];
     if (!wo) return null;

@@ -8,6 +8,7 @@ import type {
   MapObject,
   MapPresence,
   MapStock,
+  MapVisitor,
   MapWorkOrder,
   MapZone,
   PresenceState,
@@ -25,6 +26,8 @@ export interface Effect {
   color: string;
   bornAt: number;
   entityId?: string | null;
+  /** Texte affiché au-dessus de l'animation (ex. client livré). */
+  label?: string;
 }
 
 export interface Toast {
@@ -51,6 +54,7 @@ interface MapState {
   presence: Record<string, MapPresence>;
   workOrders: Record<string, MapWorkOrder>;
   stock: Record<string, MapStock>;
+  visitors: MapVisitor[];
   events: MapEvent[];
 
   selection: Selection | null;
@@ -110,6 +114,7 @@ export const useMap = create<MapState>((set, get) => ({
   presence: {},
   workOrders: {},
   stock: {},
+  visitors: [],
   events: [],
   selection: null,
   hover: null,
@@ -139,6 +144,7 @@ export const useMap = create<MapState>((set, get) => ({
       presence: Object.fromEntries(s.presence.map((p) => [p.employee_id, p])),
       workOrders: byId(s.workOrders),
       stock: byId(s.stock),
+      visitors: s.visitors ?? [],
       events: s.events,
       selection: null,
       focus: null,

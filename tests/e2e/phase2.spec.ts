@@ -66,6 +66,39 @@ test("éclairage : heure réelle du site, puis jour et nuit imposés", async ({ 
   await page.screenshot({ path: "test-results/screens/10b-map-nuit.png" });
 });
 
+test("clients sur la Map : visiteur en rendez-vous, client des pièces en impression, livraison nominative", async ({ page }) => {
+  type V = { id: string; client: string; pos: { x: number; z: number } | null };
+  type P = { project(x: number, y: number, z: number): { x: number; y: number }; visitors(): V[] };
+  // Le rendez-vous « Revue de conception avec Cargo Céleste » du jeu de démo est à 10 h (heure de Paris).
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(new Date());
+  const offset = new Date(`${day}T12:00:00Z`).toLocaleString("en-US", { timeZone: "Europe/Paris", hour: "2-digit", hour12: false }) === "14" ? "+02:00" : "+01:00";
+  await page.clock.setFixedTime(new Date(`${day}T10:30:00${offset}`));
+  await openMap(page, "direction");
+  const probe = () => page.evaluate(() => (window as unknown as { __mapProbe: P }).__mapProbe.visitors());
+  await expect.poll(async () => (await probe()).map((v) => v.client), { timeout: 15_000 }).toContain("Cargo Céleste");
+
+  // Le visiteur se rend en salle de réunion ; un clic ouvre sa fiche et mène à la fiche client.
+  await page.waitForTimeout(12_000);
+  const point = await page.evaluate(() => {
+    const p = (window as unknown as { __mapProbe: P }).__mapProbe;
+    const v = p.visitors().find((x) => x.client === "Cargo Céleste")!;
+    return p.project(v.pos!.x, 1.2, v.pos!.z);
+  });
+  await page.mouse.click(point.x, point.y);
+  const panel = page.getByTestId("selection-panel");
+  await expect(panel).toContainText("Visiteur · Cargo Céleste");
+  await expect(panel).toContainText("Revue de conception");
+  await expect(page.getByTestId("open-backoffice")).toHaveAttribute("href", /\/crm\/clients\/[0-9a-f-]{36}/);
+  await page.screenshot({ path: "test-results/screens/16-map-visiteur.png" });
+
+  // Pièces en impression : le nom du client au-dessus de la machine.
+  await expect(page.getByTestId("client-tag").first()).toBeVisible();
+
+  // Expédition : le camion part au nom du client.
+  await page.getByTestId("event-shipment_left").click();
+  await expect(page.getByTestId("departure-label").first()).toContainText("Livraison ·", { timeout: 15_000 });
+});
+
 test("clic sur une machine : fiche résumée et lien vers le back-office", async ({ page }) => {
   await openMap(page, "direction");
   await page.waitForTimeout(4000); // fin du survol d'introduction

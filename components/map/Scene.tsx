@@ -11,9 +11,11 @@ import { Plinth, Truck } from "./Environment";
 import { Zones } from "./Zones";
 import { StaticMerge } from "./StaticMerge";
 import { AircraftFleet, DepartingTruck, MapObjects } from "./Objects";
-import { People } from "./People";
+import { People, Visitors } from "./People";
 import { Effects } from "./Effects";
 import { LabelProjector } from "./hud/Labels";
+import { livePositions } from "@/lib/map/labels";
+import { visitorsOnSite } from "@/lib/map/visitors";
 import { DayNight, daylight } from "./DayNight";
 import { NightLights } from "./NightLights";
 
@@ -62,6 +64,8 @@ function TestProbe() {
         return { calls: gl.info.render.calls, triangles: gl.info.render.triangles, meshes };
       },
       daylight: () => ({ ...daylight }),
+      visitors: () =>
+        visitorsOnSite(useMap.getState().visitors, Date.now()).map((v) => ({ id: v.id, client: v.client_name, pos: livePositions.get(`visitor:${v.id}`) ?? null })),
       objects: () => Object.values(useMap.getState().objects).map((o) => ({ id: o.id, kit: o.kit, entity: o.entity_id, ...o.position })),
     };
   }, [camera, size, gl, scene]);
@@ -130,6 +134,7 @@ function World() {
       <NightLights zones={zones} bounds={bounds} />
       <MapObjects objects={objects} />
       <People zones={zones} objects={objects} furniture={furniture} />
+      <Visitors zones={zones} furniture={furniture} />
       <AircraftFleet />
       <DockTruck />
       <DepartingTruck />
