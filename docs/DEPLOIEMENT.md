@@ -116,16 +116,19 @@ Puis, connecté en direction : Paramètres › Intégrations › Connecter. Les 
 
 - Boîte connectée (section 5) : portées de lecture `Mail.Read` (Microsoft) ou `gmail.readonly` (Google) —
   reconnecter la boîte si elle l'a été avant cette version.
-- Relève automatique toutes les 10 minutes : `vercel.json` (Vercel Cron appelle `/jobs/inbox` avec
-  `Authorization: Bearer $CRON_SECRET`). Cette fréquence suppose une offre Vercel qui autorise les tâches
-  planifiées infra-journalières (vérifier la grille Vercel en vigueur : l'offre gratuite les limitait à une
-  exécution par jour). Sinon, ou hors Vercel, faire appeler l'URL par Supabase (extensions `pg_cron` + `pg_net`) :
+- Relève automatique : `vercel.json` déclare une relève **quotidienne** (6 h UTC) — Vercel Cron appelle
+  `/jobs/inbox` avec `Authorization: Bearer $CRON_SECRET`. L'offre gratuite de Vercel (Hobby) refuse toute
+  tâche planifiée plus fréquente qu'une fois par jour : le déploiement échoue si on l'y demande.
+- Relève toutes les 10 minutes (recommandée) : la faire déclencher par Supabase, sur toutes les offres Vercel.
+  Dans Supabase › SQL Editor, une fois l'application en ligne (remplacer l'adresse et le secret) :
   ```sql
+  create extension if not exists pg_net;
   select cron.schedule('inbox', '*/10 * * * *', $$
     select net.http_get('https://gestion.entreprise.fr/jobs/inbox',
       headers => jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>'))
   $$);
   ```
+  Avec une offre Vercel Pro, on peut à la place remettre `*/10 * * * *` dans `vercel.json`.
 - Seuls les messages de contacts clients et de fournisseurs connus sont rangés ; les autres sont ignorés.
 
 ## 8. Exploitation
