@@ -7,6 +7,9 @@ export default defineConfig({
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
     viewport: { width: 1440, height: 900 },
+    // En CI : trace (console, réseau, DOM) et capture conservées pour chaque échec
+    trace: process.env.CI ? "retain-on-failure" : "off",
+    screenshot: process.env.CI ? "only-on-failure" : "off",
     launchOptions: {
       ...(process.env.PLAYWRIGHT_CHROMIUM_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } : {}),
       // WebGL logiciel pour la Map en CI (pas de GPU).
