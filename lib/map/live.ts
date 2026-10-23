@@ -94,7 +94,7 @@ function effectFor(e: MapEvent): { kind: EffectKind; color: string; position: Ve
         const dock = st.zones.find((z) => z.type === "dock");
         if (dock) {
           const [, z1, x2, z2] = rectOf(dock);
-          st.addEffect({ kind: "depart", color: "#ffffff", position: { x: x2, y: 0, z: (z1 + z2) / 2 } });
+          st.addEffect({ kind: "depart", color: "#ffffff", position: { x: x2, y: 0, z: (z1 + z2) / 2 }, label: (p.client as string | undefined) ?? undefined });
         }
       }
       return { kind: "pulse", color: "#14b8a6", position: pos };

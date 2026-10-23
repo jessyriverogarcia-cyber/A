@@ -2,6 +2,9 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { can, type UserContext } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
+import { sectorConfig } from "@/config/sector.config";
+import { todayIso } from "@/lib/domain/kpis";
+import { zonedToIso } from "@/lib/domain/hr";
 import type { SiteSnapshot } from "./types";
 
 /** Charge tout ce que la Map d'un site affiche, avec les droits (RLS) de l'utilisateur. */
@@ -26,6 +29,42 @@ export async function loadSiteSnapshot(ctx: UserContext, siteKey: string): Promi
   ]);
 
   const zoneIds = new Set((zones.data ?? []).map((z) => z.id));
+
+  // Visites clients du jour (agenda) reçues par l'équipe de ce site ; la Map filtre l'heure en direct.
+  const tz = sectorConfig.company.timezone;
+  const day = todayIso(tz);
+  const siteEmployees = new Set((employees.data ?? []).map((e) => e.id));
+  const { data: meetings } = await supabase
+    .from("calendar_events")
+    .select("id, title, starts_at, ends_at, client_id, owner_employee_id")
+    .eq("kind", "client")
+    .not("client_id", "is", null)
+    .lt("starts_at", zonedToIso(day, "23:59", tz))
+    .gt("ends_at", zonedToIso(day, "00:00", tz));
+  // calendar_events.client_id n'a pas de clé étrangère : clients et contacts sont lus à part (avec la RLS crm).
+  const hosted = (meetings ?? []).filter((m) => m.owner_employee_id && siteEmployees.has(m.owner_employee_id));
+  const clientIds = [...new Set(hosted.map((m) => m.client_id!))];
+  const [{ data: clientRows }, { data: contacts }] = clientIds.length
+    ? await Promise.all([
+        supabase.from("clients").select("id, name").in("id", clientIds),
+        supabase.from("contacts").select("client_id, first_name, last_name, is_primary").in("client_id", clientIds).order("is_primary", { ascending: false }),
+      ])
+    : [{ data: [] }, { data: [] }];
+  const clientName = new Map((clientRows ?? []).map((c) => [c.id, c.name]));
+  const contactOf = (clientId: string) => (contacts ?? []).find((c) => c.client_id === clientId);
+  const visitors = hosted.filter((m) => clientName.has(m.client_id!)).map((m) => {
+    const c = contactOf(m.client_id!);
+    return {
+      id: m.id,
+      client_id: m.client_id!,
+      client_name: clientName.get(m.client_id!)!,
+      contact_name: c ? `${c.first_name} ${c.last_name}` : null,
+      title: m.title,
+      starts_at: m.starts_at,
+      ends_at: m.ends_at,
+      host_employee_id: m.owner_employee_id,
+    };
+  });
   return {
     orgId: ctx.org.id,
     site,
@@ -46,6 +85,7 @@ export async function loadSiteSnapshot(ctx: UserContext, siteKey: string): Promi
         min_quantity: Number(s.min_quantity),
         supplier_name: (suppliers as unknown as { name: string } | null)?.name ?? null,
       })),
+    visitors,
     events: events.data ?? [],
     canEdit: can(ctx, "map", "update"),
     canRunScenario: isDemoMode(), // scénario fictif : jamais sur des données de production

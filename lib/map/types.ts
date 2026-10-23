@@ -96,6 +96,18 @@ export interface MapStock {
   supplier_name: string | null;
 }
 
+/** Rendez-vous client du jour (agenda) : le client apparaît sur la Map pendant sa visite. */
+export interface MapVisitor {
+  id: string;
+  client_id: string;
+  client_name: string;
+  contact_name: string | null;
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  host_employee_id: string | null;
+}
+
 export interface MapEvent {
   id: string;
   type: string;
@@ -115,6 +127,7 @@ export interface SiteSnapshot {
   presence: MapPresence[];
   workOrders: MapWorkOrder[];
   stock: MapStock[];
+  visitors: MapVisitor[];
   events: MapEvent[];
   canEdit: boolean;
   canRunScenario: boolean;
@@ -123,6 +136,7 @@ export interface SiteSnapshot {
 export type Selection =
   | { kind: "asset"; id: string }
   | { kind: "employee"; id: string }
+  | { kind: "visitor"; id: string }
   | { kind: "stock_item"; id: string }
   | { kind: "work_order"; id: string }
   | { kind: "zone"; id: string };
